@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OASIS BBS - Nuclear Winter</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #000;
+      font-family: 'VT323', monospace;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    .container {
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+      color: #00ff00;
+    }
+    
+    /* Terminal effect */
+    .terminal {
+      width: 100%;
+      height: 100%;
+      padding: 40px;
+      font-size: 24px;
+      line-height: 1.4;
+      letter-spacing: 2px;
+      position: relative;
+      background: #000;
+    }
+    
+    /* Blinking cursor */
+    .cursor {
+      display: inline-block;
+      width: 12px;
+      height: 28px;
+      background: #00ff00;
+      margin-left: 5px;
+      animation: blink-cursor 1s step-end infinite;
+    }
+    
+    @keyframes blink-cursor {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    
+    /* Text animations */
+    .line {
+      opacity: 0;
+      animation: type-in 0.1s forwards;
+    }
+    
+    @keyframes type-in {
+      to { opacity: 1; }
+    }
+    
+    /* ANSI color classes */
+    .cyan { color: #00ffff; }
+    .yellow { color: #ffff00; }
+    .red { color: #ff0000; }
+    .magenta { color: #ff00ff; }
+    .blue { color: #5555ff; }
+    .green { color: #00ff00; }
+    .white { color: #ffffff; }
+    .gray { color: #808080; }
+    
+    /* ANSI art border */
+    .border-char { color: #00ffff; }
+    
+    /* Scanlines */
+    .scanlines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    /* CRT glow */
+    .crt-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center,
+        rgba(0, 255, 0, 0.1) 0%,
+        transparent 70%);
+      pointer-events: none;
+      z-index: 999;
+    }
+    
+    /* Screen flicker */
+    @keyframes flicker {
+      0% { opacity: 1; }
+      2% { opacity: 0.95; }
+      4% { opacity: 1; }
+      6% { opacity: 0.98; }
+      8% { opacity: 1; }
+      98% { opacity: 1; }
+      100% { opacity: 0.97; }
+    }
+    
+    .terminal {
+      animation: flicker 0.15s infinite;
+    }
+    
+    /* Text glow effect */
+    .glow {
+      text-shadow: 
+        0 0 5px currentColor,
+        0 0 10px currentColor;
+    }
+    
+    /* Center content */
+    .content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    /* ASCII art spacing */
+    pre {
+      margin: 0;
+      font-family: 'VT323', monospace;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+    
+    /* Controls */
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+    }
+    
+    .replay-btn {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00ff00;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    
+    .replay-btn:hover {
+      background: #00ffff;
+      box-shadow: 0 0 20px #00ffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <button class="replay-btn" onclick="replay()">↻ REPLAY</button>
+    </div>
+    
+    <div class="terminal">
+      <div class="content" id="content">
+        <!-- Content will be typed in by JavaScript -->
+      </div>
+    </div>
+    
+    <div class="crt-glow"></div>
+    <div class="scanlines"></div>
+  </div>
+  
+  <script>
+    const lines = [
+      { text: '<span class="border-char">╔═══════════════════════════════════════════════════════════════════════════╗</span>', delay: 0 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>   <span class="cyan glow">███████╗  █████╗  ███████╗ ██╗ ███████╗</span>                              <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>   <span class="cyan glow">██╔═══██╗██╔══██╗ ██╔════╝ ██║ ██╔════╝</span>                              <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>   <span class="cyan glow">██║   ██║███████║ ███████╗ ██║ ███████╗</span>                              <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>   <span class="cyan glow">██║   ██║██╔══██║ ╚════██║ ██║ ╚════██║</span>                              <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>   <span class="cyan glow">╚██████╔╝██║  ██║ ███████║ ██║ ███████║</span>                              <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>   <span class="cyan glow"> ╚═════╝ ╚═╝  ╚═╝ ╚══════╝ ╚═╝ ╚══════╝</span>                              <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>              <span class="yellow glow">OASIS BULLETIN BOARD SYSTEM</span>                         <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">╠═══════════════════════════════════════════════════════════════════════════╣</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>  <span class="white">System Date:</span> <span class="green">Day ' + Math.floor((new Date() - new Date('2023-10-24T00:00:00')) / (1000*60*60*24)).toLocaleString('en-US') + ' AE (After Event)</span>                              <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>  <span class="white">Local Time:</span> <span class="green" id="time">20:47:33 PST</span>                                            <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>  <span class="white">Node:</span> <span class="cyan">OASIS-MAIN</span>                                                  <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>  <span class="white">Sysop:</span> <span class="yellow">THE ENTITY</span>                                           <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">╠═══════════════════════════════════════════════════════════════════════════╣</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>  <span class="red glow">⚠ ALERT:</span> <span class="yellow">Presidential Broadcast Detected - Verify All Information</span>  <span class="border-char">║</span>', delay: 150 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>  <span class="green">✓ STATUS:</span> <span class="white">Shelter Systems Operational</span>                               <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>  <span class="green">✓ STATUS:</span> <span class="white">Radiation Levels: 3.2 R/hr (Safe)</span>                        <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>  <span class="green">✓ STATUS:</span> <span class="white">Communications Array: Online</span>                             <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>  <span class="green">✓ STATUS:</span> <span class="white">Survivors Connected: <span class="cyan" id="survivors">142</span></span>                              <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">╠═══════════════════════════════════════════════════════════════════════════╣</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>  <span class="cyan glow">TONIGHT\'S BROADCAST:</span>                                                  <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>    <span class="yellow">♫</span> <span class="white">Nuclear Winter Club - Live Transmission</span>                        <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>    <span class="yellow">♫</span> <span class="white">8:00 PM - 10:00 PM PDT</span>                                         <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>    <span class="yellow">♫</span> <span class="white">Dancing on the Edge of Extinction</span>                             <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">║</span>  <span class="magenta glow">[PRESS ANY KEY TO CONTINUE]</span><span class="cursor"></span>                                  <span class="border-char">║</span>', delay: 100 },
+      { text: '<span class="border-char">║</span>                                                                           <span class="border-char">║</span>', delay: 50 },
+      { text: '<span class="border-char">╚═══════════════════════════════════════════════════════════════════════════╝</span>', delay: 100 },
+      { text: '', delay: 50 },
+      { text: '<span class="gray">Connection maintained. Signal strength: Strong. We remain.</span>', delay: 100 }
+    ];
+    
+    let currentLine = 0;
+    const contentDiv = document.getElementById('content');
+    
+    function typeNextLine() {
+      if (currentLine < lines.length) {
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'line';
+        lineDiv.innerHTML = lines[currentLine].text;
+        lineDiv.style.animationDelay = '0s';
+        contentDiv.appendChild(lineDiv);
+        
+        currentLine++;
+        setTimeout(typeNextLine, lines[currentLine - 1].delay);
+      }
+    }
+    
+    // Start typing immediately
+    typeNextLine();
+    
+    // Update time
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const timeEl = document.getElementById('time');
+      if (timeEl) {
+        timeEl.textContent = `${hours}:${minutes}:${seconds} PST`;
+      }
+    }
+    
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Randomly update survivor count
+    setInterval(() => {
+      const survivorsEl = document.getElementById('survivors');
+      if (survivorsEl) {
+        const current = parseInt(survivorsEl.textContent);
+        const change = Math.random() > 0.5 ? 1 : -1;
+        survivorsEl.textContent = current + change;
+      }
+    }, 5000);
+    
+    function replay() {
+      location.reload();
+    }
+  </script>
+</body>
+</html>
