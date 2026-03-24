@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day Counter - Nuclear Winter</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400,700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #000;
+      font-family: 'Courier Prime', monospace;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    .container {
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(to bottom, #d4c5a9 0%, #a89276 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Paper texture overlay */
+    .paper-texture {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px);
+      pointer-events: none;
+    }
+    
+    /* Burn/tear effects */
+    .burn-edge {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      box-shadow: 
+        inset 0 0 100px rgba(139, 69, 19, 0.4),
+        inset 0 0 200px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+    }
+    
+    /* Content */
+    .content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      animation: fade-in 0.3s forwards;
+    }
+    
+    @keyframes fade-in {
+      to { opacity: 1; }
+    }
+    
+    .calendar-header {
+      font-size: 28px;
+      color: #3d2817;
+      letter-spacing: 4px;
+      margin-bottom: 60px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    
+    .calendar-page {
+      width: 600px;
+      background: rgba(255, 255, 255, 0.4);
+      border: 3px solid #8b4513;
+      padding: 60px;
+      position: relative;
+      box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.3),
+        inset 0 0 50px rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Torn edge effect */
+    .calendar-page::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 0;
+      right: 0;
+      height: 15px;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 10px,
+        #d4c5a9 10px,
+        #d4c5a9 12px
+      );
+    }
+    
+    .day-label {
+      text-align: center;
+      font-size: 48px;
+      color: #2d1810;
+      letter-spacing: 8px;
+      margin-bottom: 30px;
+      font-weight: bold;
+    }
+    
+    /* Flip number display */
+    .number-display {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 40px 0;
+    }
+    
+    .digit-container {
+      position: relative;
+      width: 80px;
+      height: 120px;
+    }
+    
+    .digit {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #1a1a1a;
+      border: 3px solid #3d2817;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 72px;
+      font-weight: bold;
+      color: #e0e0e0;
+      box-shadow: 
+        inset 0 5px 10px rgba(0, 0, 0, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.3);
+      font-family: 'Courier Prime', monospace;
+    }
+    
+    .digit.flipping {
+      animation: flip 0.6s ease-in-out;
+    }
+    
+    @keyframes flip {
+      0% {
+        transform: rotateX(0deg);
+      }
+      50% {
+        transform: rotateX(90deg);
+      }
+      100% {
+        transform: rotateX(0deg);
+      }
+    }
+    
+    .comma {
+      font-size: 72px;
+      color: #2d1810;
+      align-self: flex-end;
+      padding-bottom: 15px;
+      font-weight: bold;
+    }
+    
+    .ae-label {
+      text-align: center;
+      font-size: 36px;
+      color: #8b0000;
+      letter-spacing: 6px;
+      margin-top: 40px;
+      font-weight: bold;
+      text-transform: uppercase;
+      position: relative;
+    }
+    
+    /* Stamp effect */
+    .ae-label::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 250px;
+      height: 60px;
+      border: 4px solid rgba(139, 0, 0, 0.3);
+      border-radius: 5px;
+      transform: translateX(-50%) rotate(-2deg);
+    }
+    
+    .chronograph {
+      position: absolute;
+      bottom: 50px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 18px;
+      color: #3d2817;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    
+    /* Burn animation */
+    .burn-effect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), 
+        rgba(255, 100, 0, 0.5) 0%, 
+        transparent 20%);
+      opacity: 0;
+      pointer-events: none;
+      animation: burn 0.8s 2.5s forwards;
+    }
+    
+    @keyframes burn {
+      0% { opacity: 0; }
+      50% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    /* Controls */
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+    }
+    
+    .replay-btn {
+      background: #8b4513;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-family: 'Courier Prime', monospace;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 3px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    
+    .replay-btn:hover {
+      background: #a0522d;
+      transform: translateY(-2px);
+      box-shadow: 0 7px 20px rgba(0, 0, 0, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <button class="replay-btn" onclick="replay()">↻ REPLAY</button>
+    </div>
+    
+    <div class="paper-texture"></div>
+    <div class="burn-edge"></div>
+    
+    <div class="content">
+      <div class="calendar-header">Post-Event Calendar</div>
+      
+      <div class="calendar-page">
+        <div class="day-label">DAY</div>
+        
+        <div class="number-display">
+          <div class="digit-container">
+            <div class="digit flipping" style="animation-delay: 0.1s">2</div>
+          </div>
+          <div class="comma">,</div>
+          <div class="digit-container">
+            <div class="digit flipping" style="animation-delay: 0.2s">8</div>
+          </div>
+          <div class="digit-container">
+            <div class="digit flipping" style="animation-delay: 0.3s">4</div>
+          </div>
+          <div class="digit-container">
+            <div class="digit flipping" style="animation-delay: 0.4s">7</div>
+          </div>
+        </div>
+        
+        <div class="ae-label">After Event (AE)</div>
+      </div>
+      
+      <div class="chronograph">Oasis Chronograph</div>
+    </div>
+    
+    <div class="burn-effect" style="--x: 20%; --y: 15%;"></div>
+  </div>
+  
+  <script>
+    // ── AUTO-CALCULATING DAY COUNTER ──
+    // The Event Date: October 24, 2023
+    // The day Thorne's Covenant launched the strikes.
+    // This counter updates automatically every day — never needs manual updating.
+
+    const EVENT_DATE = new Date('2023-10-24T00:00:00');
+
+    function getDayCount() {
+      const now = new Date();
+      const diff = now - EVENT_DATE;
+      return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+
+    function updateDayDisplay() {
+      const days = getDayCount();
+      const dayStr = days.toLocaleString('en-US'); // adds comma: 1,247
+
+      // Extract digits and comma for flip display
+      const digits = dayStr.replace(',', '');
+      const hasComma = dayStr.includes(',');
+
+      // Rebuild the number display dynamically
+      const numberDisplay = document.querySelector('.number-display');
+      if (!numberDisplay) return;
+
+      numberDisplay.innerHTML = '';
+
+      let charIndex = 0;
+      for (let i = 0; i < dayStr.length; i++) {
+        const ch = dayStr[i];
+        if (ch === ',') {
+          const comma = document.createElement('div');
+          comma.className = 'comma';
+          comma.textContent = ',';
+          numberDisplay.appendChild(comma);
+        } else {
+          const container = document.createElement('div');
+          container.className = 'digit-container';
+          const digit = document.createElement('div');
+          digit.className = 'digit flipping';
+          digit.style.animationDelay = (charIndex * 0.1) + 's';
+          digit.textContent = ch;
+          container.appendChild(digit);
+          numberDisplay.appendChild(container);
+          charIndex++;
+        }
+      }
+
+      // Update the footer chronograph
+      const chrono = document.querySelector('.chronograph');
+      if (chrono) chrono.textContent = 'Oasis Chronograph — Day ' + dayStr + ' AE';
+    }
+
+    updateDayDisplay();
+
+    function replay() {
+      location.reload();
+    }
+  </script>
+</body>
+</html>
