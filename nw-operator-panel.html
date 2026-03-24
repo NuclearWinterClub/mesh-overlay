@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V1 OPERATOR PANEL — Nuclear Winter</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      font-family: 'Share Tech Mono', monospace;
+      color: #00ff00;
+      min-height: 100vh;
+      padding: 40px;
+    }
+
+    .header {
+      border-bottom: 2px solid #00ff00;
+      padding-bottom: 20px;
+      margin-bottom: 40px;
+    }
+
+    .header-title {
+      font-size: 32px;
+      letter-spacing: 8px;
+      color: #00ffff;
+      text-shadow: 0 0 20px #00ffff;
+    }
+
+    .header-sub {
+      font-size: 16px;
+      color: #00ff00;
+      letter-spacing: 4px;
+      margin-top: 8px;
+      opacity: 0.7;
+    }
+
+    .section {
+      background: rgba(0, 255, 0, 0.05);
+      border: 1px solid #00ff00;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      letter-spacing: 6px;
+      color: #00ffff;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0,255,0,0.3);
+    }
+
+    .field-group {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .field-label {
+      font-size: 14px;
+      letter-spacing: 3px;
+      color: #00ff00;
+      min-width: 180px;
+      opacity: 0.8;
+    }
+
+    input[type="text"] {
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #00ff00;
+      color: #ffffff;
+      padding: 12px 16px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 16px;
+      letter-spacing: 2px;
+      flex: 1;
+      max-width: 400px;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #00ffff;
+      box-shadow: 0 0 10px rgba(0,255,255,0.3);
+    }
+
+    input[type="text"]::placeholder {
+      color: rgba(0,255,0,0.3);
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 12px 24px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(0,255,0,0.15);
+      border-color: #00ffff;
+      color: #00ffff;
+    }
+
+    .btn-primary {
+      border-color: #00ffff;
+      color: #00ffff;
+    }
+
+    .btn-primary:hover {
+      background: rgba(0,255,255,0.15);
+      box-shadow: 0 0 15px rgba(0,255,255,0.3);
+    }
+
+    .btn-danger {
+      border-color: #ff0000;
+      color: #ff0000;
+    }
+
+    .btn-danger:hover {
+      background: rgba(255,0,0,0.15);
+    }
+
+    .status-bar {
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(0,255,0,0.3);
+      padding: 15px 20px;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: #00ff00;
+      margin-top: 10px;
+      min-height: 48px;
+    }
+
+    .status-ok   { color: #00ff00; }
+    .status-warn { color: #ffb000; }
+    .status-err  { color: #ff0000; }
+
+    .current-value {
+      font-size: 24px;
+      letter-spacing: 4px;
+      color: #ffffff;
+      padding: 15px 0;
+      text-shadow: 0 0 10px rgba(0,255,255,0.5);
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(0,255,0,0.2);
+      margin: 20px 0;
+    }
+
+    .twitch-status {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .signal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ff0000;
+      animation: dot-pulse 2s infinite;
+    }
+
+    .signal-dot.live {
+      background: #00ff00;
+    }
+
+    @keyframes dot-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .viewer-count {
+      font-size: 48px;
+      color: #00ffff;
+      text-shadow: 0 0 20px #00ffff;
+      letter-spacing: 4px;
+    }
+
+    .viewer-label {
+      font-size: 14px;
+      color: #00ff00;
+      letter-spacing: 3px;
+      opacity: 0.7;
+      margin-top: 5px;
+    }
+
+    .scanlines {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,0.08),
+        rgba(0,0,0,0.08) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(0,255,0,0.2);
+      font-size: 12px;
+      color: rgba(0,255,0,0.4);
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="scanlines"></div>
+
+  <div class="header">
+    <div class="header-title">V1 OPERATOR PANEL</div>
+    <div class="header-sub">OASIS BROADCAST COMMAND — NUCLEAR WINTER CLUB</div>
+  </div>
+
+  <!-- OPERATOR IDENTITY -->
+  <div class="section">
+    <div class="section-title">OPERATOR IDENTITY</div>
+    <div class="field-label" style="margin-bottom:10px;">CURRENT SYSOP:</div>
+    <div class="current-value" id="current-operator">—</div>
+    <hr class="divider">
+    <div class="field-group">
+      <div class="field-label">SET CALLSIGN:</div>
+      <input type="text" id="operator-input" placeholder="Enter callsign..." maxlength="20">
+      <button class="btn btn-primary" onclick="setOperator()">CONFIRM</button>
+      <button class="btn btn-danger" onclick="clearOperator()">CLEAR</button>
+    </div>
+    <div class="status-bar" id="operator-status">Awaiting callsign input.</div>
+  </div>
+
+  <!-- TWITCH STATUS -->
+  <div class="section">
+    <div class="section-title">TWITCH SIGNAL STATUS</div>
+    <div class="twitch-status">
+      <div class="signal-dot" id="live-dot"></div>
+      <div>
+        <div class="viewer-count" id="viewer-count">--</div>
+        <div class="viewer-label">SURVIVORS CONNECTED</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="status-bar" id="twitch-status">Fetching signal data...</div>
+    <br>
+    <div id="follower-count" style="font-size:14px;color:#00ff00;letter-spacing:2px;opacity:0.7;margin-bottom:15px;"></div>
+    <button class="btn btn-primary" onclick="launchTwitchAuth()">⚡ AUTHORIZE TWITCH</button>
+    &nbsp;
+    <button class="btn" onclick="fetchTwitchViewers()">↻ REFRESH</button>
+    &nbsp;
+    <button class="btn btn-danger" onclick="clearTwitchToken();fetchTwitchViewers()">✗ DISCONNECT</button>
+  </div>
+
+  <!-- BROADCAST NOTES -->
+  <div class="section">
+    <div class="section-title">OPERATOR NOTES</div>
+    <div class="field-group" style="align-items:flex-start;">
+      <div class="field-label" style="padding-top:12px;">TONIGHT'S NOTES:</div>
+      <textarea id="operator-notes"
+        style="background:rgba(0,0,0,0.8);border:1px solid #00ff00;color:#fff;
+               padding:12px 16px;font-family:'Share Tech Mono',monospace;font-size:14px;
+               letter-spacing:1px;flex:1;max-width:500px;height:120px;resize:vertical;"
+        placeholder="Fragment cues, story beats, timing notes..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="saveNotes()">SAVE NOTES</button>
+    <div class="status-bar" id="notes-status" style="margin-top:10px;">Notes not yet saved.</div>
+  </div>
+
+  <div class="footer">
+    Nuclear Winter Club · Oasis Broadcast System · V1 Operator Panel
+    · Data updates every 60 seconds · Callsign persists until cleared
+  </div>
+
+  <script>
+    const TWITCH_CLIENT_ID  = 'czg89ot2fntobq8fnpgcdngjnx2vmg';
+    const TWITCH_CHANNEL    = 'nuclear_winter_club';
+    const TWITCH_REDIRECT   = 'https://nuclearwinterclub.github.io/mesh-overlay/';
+    const TWITCH_SCOPE      = '';  // read-only, no scopes needed for public data
+
+    // ── OPERATOR IDENTITY ──
+    function loadOperator() {
+      const stored = localStorage.getItem('nw_operator_name');
+      const el = document.getElementById('current-operator');
+      const status = document.getElementById('operator-status');
+      if (stored) {
+        el.textContent = stored.toUpperCase();
+        status.innerHTML = '<span class="status-ok">✓ Callsign active — showing on BBS screen.</span>';
+      } else {
+        el.textContent = '— NOT SET —';
+        status.innerHTML = '<span class="status-warn">⚠ No callsign set. BBS screen shows V1 OPERATOR.</span>';
+      }
+    }
+
+    function setOperator() {
+      const input = document.getElementById('operator-input').value.trim();
+      if (!input) {
+        document.getElementById('operator-status').innerHTML =
+          '<span class="status-err">✗ Enter a callsign first.</span>';
+        return;
+      }
+      localStorage.setItem('nw_operator_name', input);
+      document.getElementById('operator-input').value = '';
+      loadOperator();
+    }
+
+    function clearOperator() {
+      localStorage.removeItem('nw_operator_name');
+      loadOperator();
+    }
+
+    // Allow Enter key
+    document.getElementById('operator-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') setOperator();
+    });
+
+    // ── TWITCH IMPLICIT OAUTH + VIEWERS ──
+    // Uses implicit grant flow — no server or secret needed
+    // On first run: opens Twitch login popup to get token
+    // Token stored in localStorage — persists across sessions
+
+    function getTwitchToken() {
+      return localStorage.getItem('nw_twitch_token');
+    }
+
+    function saveTwitchToken(token) {
+      localStorage.setItem('nw_twitch_token', token);
+    }
+
+    function clearTwitchToken() {
+      localStorage.removeItem('nw_twitch_token');
+    }
+
+    function launchTwitchAuth() {
+      const authUrl = `https://id.twitch.tv/oauth2/authorize` +
+        `?client_id=${TWITCH_CLIENT_ID}` +
+        `&redirect_uri=${encodeURIComponent(TWITCH_REDIRECT)}` +
+        `&response_type=token` +
+        `&scope=` +
+        `&force_verify=false`;
+
+      // Open auth in a small popup
+      const popup = window.open(authUrl, 'twitch_auth',
+        'width=500,height=700,scrollbars=yes');
+
+      // Poll for redirect completion
+      const poll = setInterval(() => {
+        try {
+          const url = popup.location.href;
+          if (url.includes('access_token=')) {
+            const match = url.match(/access_token=([^&]+)/);
+            if (match) {
+              saveTwitchToken(match[1]);
+              popup.close();
+              clearInterval(poll);
+              document.getElementById('twitch-status').innerHTML =
+                '<span class="status-ok">✓ Twitch authorized. Fetching data...</span>';
+              fetchTwitchViewers();
+            }
+          }
+        } catch(e) {
+          // Cross-origin — still waiting for redirect
+        }
+        if (popup.closed) clearInterval(poll);
+      }, 500);
+    }
+
+    async function fetchTwitchViewers() {
+      const status  = document.getElementById('twitch-status');
+      const countEl = document.getElementById('viewer-count');
+      const dot     = document.getElementById('live-dot');
+
+      let token = getTwitchToken();
+
+      // No token yet — launch auth flow
+      if (!token) {
+        status.innerHTML = '<span class="status-warn">⚠ Twitch not authorized. Click AUTHORIZE to connect.</span>';
+        countEl.textContent = '--';
+        return;
+      }
+
+      status.innerHTML = '<span class="status-warn">Connecting to Twitch signal...</span>';
+
+      try {
+        const streamRes = await fetch(
+          `https://api.twitch.tv/helix/streams?user_login=${TWITCH_CHANNEL}`,
+          { headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Authorization': `Bearer ${token}` } }
+        );
+
+        // Token expired — clear and re-auth
+        if (streamRes.status === 401) {
+          clearTwitchToken();
+          status.innerHTML = '<span class="status-err">✗ Token expired. Click AUTHORIZE to reconnect.</span>';
+          countEl.textContent = '--';
+          return;
+        }
+
+        const streamData = await streamRes.json();
+        const stream = streamData.data && streamData.data[0];
+
+        if (stream) {
+          countEl.textContent = stream.viewer_count.toLocaleString();
+          dot.classList.add('live');
+          status.innerHTML = `<span class="status-ok">✓ STREAM LIVE — ${stream.viewer_count} survivors connected. Title: "${stream.title}"</span>`;
+        } else {
+          countEl.textContent = 'OFFLINE';
+          dot.classList.remove('live');
+          status.innerHTML = '<span class="status-warn">⚠ Stream offline. Monitoring — will update when live.</span>';
+        }
+
+        // Also fetch follower count
+        const userRes = await fetch(
+          `https://api.twitch.tv/helix/users?login=${TWITCH_CHANNEL}`,
+          { headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Authorization': `Bearer ${token}` } }
+        );
+        const userData = await userRes.json();
+        const user = userData.data && userData.data[0];
+        if (user) {
+          const followerEl = document.getElementById('follower-count');
+          if (followerEl) followerEl.textContent = 'Community Registry: ' + (user.view_count || '--');
+        }
+
+      } catch(err) {
+        countEl.textContent = 'ERR';
+        dot.classList.remove('live');
+        status.innerHTML = `<span class="status-err">✗ Signal lost: ${err.message}</span>`;
+      }
+    }
+
+    // ── NOTES ──
+    function saveNotes() {
+      const notes = document.getElementById('operator-notes').value;
+      localStorage.setItem('nw_operator_notes', notes);
+      document.getElementById('notes-status').innerHTML =
+        '<span class="status-ok">✓ Notes saved.</span>';
+    }
+
+    function loadNotes() {
+      const stored = localStorage.getItem('nw_operator_notes');
+      if (stored) {
+        document.getElementById('operator-notes').value = stored;
+        document.getElementById('notes-status').innerHTML =
+          '<span class="status-ok">✓ Previous notes loaded.</span>';
+      }
+    }
+
+    // ── BOOT ──
+    loadOperator();
+    loadNotes();
+    // Only auto-fetch if we already have a token
+    if (getTwitchToken()) {
+      fetchTwitchViewers();
+      setInterval(fetchTwitchViewers, 60000);
+    } else {
+      document.getElementById('twitch-status').innerHTML =
+        '<span class="status-warn">⚠ Twitch not authorized. Click AUTHORIZE TWITCH to connect.</span>';
+    }
+  </script>
+</body>
+</html>
