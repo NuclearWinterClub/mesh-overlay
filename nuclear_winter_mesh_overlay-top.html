@@ -394,7 +394,7 @@ const TYPE_MAP = {
 };
 
 // Convert MESH sheet rows into fragment objects
-// Columns: ID(0) | Content(1) | Cycle(2) | Date(3) | Status(4) | Type(5)
+// Columns: ID(0) | Content(1) | Cycle(2) | Date(3) | Status(4) | Type(5) | Title(6)
 function sheetsRowsToFragments(rows) {
   const frags = [];
   for (let i = 1; i < rows.length; i++) {
@@ -406,10 +406,11 @@ function sheetsRowsToFragments(rows) {
     if (!content) continue;
     const typeKey = (row[5] || '').toLowerCase().trim();
     const typeConfig = TYPE_MAP[typeKey] || TYPE_MAP['mesh'];
+    const title = (row[6] || '').trim() || null;
     frags.push({
       cat: typeConfig.cat,
       label: typeConfig.label,
-      header: null,
+      header: title,
       body: content,
       priority: 'low'
     });
