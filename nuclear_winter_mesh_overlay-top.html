@@ -419,8 +419,10 @@ function sheetsRowsToFragments(rows) {
 }
 
 // Fetch live fragments from Google Sheets
-// On success: replaces active rotation pool
-// On failure: silently continues with current fragments (fallback intact)
+// On success: replaces fallback pool with live data — fallback never returns
+// On failure: silently continues with current fragments, retries next interval
+let sheetsLive = false; // true once live data has been confirmed at least once
+
 function fetchSheetsFragments() {
   fetch(SHEETS_CSV_URL)
     .then(r => {
@@ -431,233 +433,73 @@ function fetchSheetsFragments() {
       const rows = parseCSV(text);
       const live = sheetsRowsToFragments(rows);
       if (live.length > 0) {
-        // Replace the active fragment pool with live Sheet data
+        // Replace fragment pool with live Sheet data
+        // Once live data is confirmed, fallback fragments are gone for this session
         FRAGMENTS.length = 0;
         live.forEach(f => FRAGMENTS.push(f));
-        // Reshuffle queue with new fragments
         queue = shuffle([...FRAGMENTS]);
         qi = 0;
+        if (!sheetsLive) {
+          sheetsLive = true;
+          console.log('[MESH] Live data confirmed — fallback retired for this session');
+        }
         console.log('[MESH] Sheets loaded — ' + live.length + ' fragment(s) active');
+      } else if (!sheetsLive) {
+        // No live rows yet and we've never had live data — stay on fallback
+        console.warn('[MESH] Sheets returned 0 live rows — holding on fallback fragments');
       } else {
-        console.warn('[MESH] Sheets returned 0 live fragments — keeping current rotation');
+        // Had live data before but sheet is now empty — keep last known live set
+        console.warn('[MESH] Sheets returned 0 live rows — holding last known live fragments');
       }
     })
     .catch(err => {
-      console.warn('[MESH] Sheets fetch failed — running on fallback fragments:', err.message);
+      if (!sheetsLive) {
+        console.warn('[MESH] Sheets fetch failed — running on fallback fragments:', err.message);
+      } else {
+        console.warn('[MESH] Sheets fetch failed — holding last known live fragments:', err.message);
+      }
     });
 }
 
 // ── FALLBACK FRAGMENTS (used if Sheets unavailable) ──
+// These display while waiting for Google Sheets connection.
+// They disappear the moment live data is confirmed.
+// Use these as tone/format templates when writing real MESH content.
 const FRAGMENTS = [
-
-  // ── OASIS TRANSMISSIONS ──────────────────
   {
-    cat: "oasis",
-    label: "OASIS // TRANSMISSION",
-    header: "SIGNAL ACTIVE",
-    body: "Nuclear Winter is broadcasting. The frequency holds. Survivors — you are not alone tonight.",
-    priority: "low",
-    duration: 15000
+    cat: 'mesh',
+    label: 'MESH FRAGMENT',
+    header: 'SIGNAL LOST',
+    body: 'Awaiting MESH relay connection. Live fragment data pending. Standing by for transmission.',
+    priority: 'low'
   },
   {
-    cat: "oasis",
-    label: "OASIS // TRANSMISSION",
-    header: "ARCHIVE NOTE",
-    body: "The music is not entertainment. It is evidence. Every set played is documentation that we are still here.",
-    priority: "low",
-    duration: 15000
+    cat: 'covenant',
+    label: 'COVENANT — INTERCEPT',
+    header: 'SIGNAL LOST',
+    body: 'Covenant monitoring status unavailable. Live intercept data pending connection. Maintain radio discipline.',
+    priority: 'low'
   },
   {
-    cat: "oasis",
-    label: "OASIS // DIRECTIVE",
-    header: "TO ALL SURVIVORS",
-    body: "The Covenant told you the world was dead. The broadcast is proof they were wrong. Dance accordingly.",
-    priority: "low",
-    duration: 15000
+    cat: 'oasis',
+    label: 'OASIS // TRANSMISSION',
+    header: 'SIGNAL LOST',
+    body: 'Oasis transmission buffer empty. Live directives pending connection. The frequency will return.',
+    priority: 'low'
   },
   {
-    cat: "oasis",
-    label: "OASIS // TRANSMISSION",
-    header: "POPULATION COUNT",
-    body: "Survivor count holding. Oasis confirms signal strength. The bunker remains open. All are welcome.",
-    priority: "low",
-    duration: 15000
+    cat: 'community',
+    label: 'COMMUNITY',
+    header: 'SIGNAL LOST',
+    body: 'Community feed offline. Survivor updates pending connection. You are not alone — signal acquiring.',
+    priority: 'low'
   },
   {
-    cat: "oasis",
-    label: "OASIS // NOTE",
-    header: "ON THE FREQUENCY",
-    body: "This signal exists because silence is how the Covenant wins. We are not giving them tonight.",
-    priority: "low",
-    duration: 15000
-  },
-
-  // ── MESH NETWORK STATUS ──────────────────
-  {
-    cat: "mesh",
-    label: "NETWORK STATUS",
-    header: "SIGNAL INTEGRITY",
-    body: "Network stability: 91%. All primary nodes nominal. Eastern relay experiencing minor packet loss. Diagnostics scheduled.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "mesh",
-    label: "RELAY STATUS",
-    header: "NODE 7 — DEGRADED",
-    body: "Signal loss on northeastern corridor: 18%. Backup routing established. Monitoring for Covenant interference pattern.",
-    priority: "med",
-    duration: 15000
-  },
-  {
-    cat: "mesh",
-    label: "EXPANSION",
-    header: "NEW RELAY ONLINE",
-    body: "Node installed 8km west. Coverage extended to abandoned industrial zone. Scavenging teams can maintain contact in previously dead zones.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "mesh",
-    label: "NETWORK STATUS",
-    header: "INTER-SETTLEMENT LINK",
-    body: "Relay system connecting Oasis, Haven, and Forge now 95% reliable. Real-time communication confirmed across all three nodes.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "mesh",
-    label: "ANOMALY",
-    header: "UNVERIFIED SIGNAL",
-    body: "Unknown frequency detected on sub-band 7. Not Covenant. Not MESH-standard. Source: unresolved. Oasis is running analysis.",
-    priority: "med",
-    duration: 15000
-  },
-
-  // ── RESOURCE UPDATES ─────────────────────
-  {
-    cat: "resource",
-    label: "RESOURCE STATUS",
-    header: "WATER RECLAMATION",
-    body: "Filtration running at 91% efficiency. New filters installed. Rationing protocols suspended for general population.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "resource",
-    label: "RESOURCE STATUS",
-    header: "FUEL CELL RESERVES",
-    body: "Reserves at 71% — recovering. Solar charging operational. Broadcast power secured through end of cycle. Non-negotiable.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "resource",
-    label: "AGRICULTURE",
-    header: "HARVEST COMPLETE",
-    body: "Cultivation cycle yield: 23% above projection. Dolly's grain plot made it. Community meal scheduled post-broadcast.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "resource",
-    label: "CRITICAL",
-    header: "FUEL RESERVES LOW",
-    body: "Fuel cell reserves at 34% capacity. All recreational use suspended. Emergency services and broadcast power protected.",
-    priority: "high",
-    duration: 15000
-  },
-  {
-    cat: "resource",
-    label: "TRADE",
-    header: "CARAVAN INBOUND",
-    body: "Haven settlement confirms arrival Thursday. Carrying: medical filters, protein rations, solar equipment. Seeking refined water.",
-    priority: "low",
-    duration: 15000
-  },
-
-  // ── COMMUNITY ALERTS ─────────────────────
-  {
-    cat: "community",
-    label: "COMMUNITY",
-    header: "NEW ARRIVALS",
-    body: "Three survivors found the signal this cycle. Intake processed. Dolly has made contact. Roll call active in community channels.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "community",
-    label: "COMMUNITY",
-    header: "SURVIVOR ROLL CALL",
-    body: "New to the bunker? Tell us your callsign, your sector, and what you carry. The community is listening.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "community",
-    label: "NOTICE",
-    header: "SKILLS EXCHANGE",
-    body: "Mechanic offering engine repair training. Medic requesting electrical assistance. Contact marketplace coordinator.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "community",
-    label: "MILESTONE",
-    header: "POPULATION RECORD",
-    body: "Listener count expanding. Signal reach increasing. Oasis note: this is what growth looks like when it is organic. It just arrives.",
-    priority: "low",
-    duration: 15000
-  },
-  {
-    cat: "community",
-    label: "COMMUNITY",
-    header: "FROM THE OPERATOR",
-    body: "The broadcast runs tonight. The VJs are ready. Whatever is coming — it hasn't arrived yet. So we dance.",
-    priority: "low",
-    duration: 15000
-  },
-
-  // ── COVENANT WARNINGS ────────────────────
-  {
-    cat: "covenant",
-    label: "COVENANT — INTERCEPT",
-    header: "PATROL DETECTED",
-    body: "Covenant vehicles observed Highway 17, 35km east. Route compromised. All caravans advised to use alternate paths.",
-    priority: "high",
-    duration: 15000
-  },
-  {
-    cat: "covenant",
-    label: "COVENANT — INTERCEPT",
-    header: "SIGNAL TRAFFIC",
-    body: "Encrypted Covenant burst transmissions 47km northeast. Pattern consistent with reconnaissance drones. Maintain radio discipline.",
-    priority: "high",
-    duration: 15000
-  },
-  {
-    cat: "covenant",
-    label: "COVENANT — INTERCEPT",
-    header: "OMNI-LENS BROADCAST",
-    body: "Sterling Thorne address detected. Duration: 47 minutes. Subject: 'signal terrorism.' Oasis classification: escalation pattern. Timeline: active.",
-    priority: "high",
-    duration: 15000
-  },
-  {
-    cat: "covenant",
-    label: "COVENANT — WARNING",
-    header: "SEARCH PATTERN SHIFT",
-    body: "Covenant logistics traffic increased 31% on southern corridors. Destination: unclear. Geographic focus: consistent with our sector.",
-    priority: "high",
-    duration: 15000
-  },
-  {
-    cat: "covenant",
-    label: "COVENANT — INTERCEPT",
-    header: "THORNE SILENT",
-    body: "Sterling Thorne absent from Omni-Lens broadcast — third consecutive cycle. Oasis pattern note: when Thorne goes quiet, something is being prepared.",
-    priority: "med",
-    duration: 15000
+    cat: 'resource',
+    label: 'RESOURCE',
+    header: 'SIGNAL LOST',
+    body: 'Resource status unavailable. Supply data pending connection. Conserve until live feed restored.',
+    priority: 'low'
   },
 ];
 
