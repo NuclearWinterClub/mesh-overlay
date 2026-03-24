@@ -36,9 +36,9 @@
     .terminal {
       width: 100%;
       height: 100%;
-      padding: 40px;
-      font-size: 28px;
-      line-height: 1.3;
+      padding: 25px 40px;
+      font-size: 22px;
+      line-height: 1.25;
       letter-spacing: 1px;
       position: relative;
       background: #000;
@@ -101,8 +101,8 @@
     
     /* Big title */
     .big-title {
-      font-size: 72px;
-      letter-spacing: 20px;
+      font-size: 56px;
+      letter-spacing: 16px;
       text-align: center;
     }
     
@@ -352,8 +352,11 @@
     }
 
     // Fetch Twitch data on load and every 60 seconds
-    fetchTwitchViewers();
-    setInterval(fetchTwitchViewers, 60000);
+    // Uses stored token from operator panel if available
+    if (getTwitchToken()) {
+      fetchTwitchViewers();
+      setInterval(fetchTwitchViewers, 60000);
+    }
 
     // Check operator name on load and every 5 seconds
     updateOperatorName();
@@ -364,4 +367,4 @@
     }
   </script>
 </body>
-</html>˝
+</html>
