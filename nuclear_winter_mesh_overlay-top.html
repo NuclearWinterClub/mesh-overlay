@@ -364,10 +364,20 @@ function parseCSV(text) {
   return rows;
 }
 
+// Type → category + badge label mapping
+// Column F (index 5) in the MESH sheet
+// Blank or unrecognized type defaults to mesh (green)
+const TYPE_MAP = {
+  'mesh':      { cat: 'mesh',      label: 'MESH FRAGMENT' },
+  'covenant':  { cat: 'covenant',  label: 'COVENANT — INTERCEPT' },
+  'oasis':     { cat: 'oasis',     label: 'OASIS // TRANSMISSION' },
+  'community': { cat: 'community', label: 'COMMUNITY' },
+  'resource':  { cat: 'resource',  label: 'RESOURCE' },
+};
+
 // Convert MESH sheet rows into fragment objects
-// Columns: ID(0) | Content(1) | Cycle(2) | Date(3) | Status(4)
+// Columns: ID(0) | Content(1) | Cycle(2) | Date(3) | Status(4) | Type(5)
 function sheetsRowsToFragments(rows) {
-  const header = rows[0];
   const frags = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -376,9 +386,11 @@ function sheetsRowsToFragments(rows) {
     if (status !== 'live') continue;
     const content = (row[1] || '').trim();
     if (!content) continue;
+    const typeKey = (row[5] || '').toLowerCase().trim();
+    const typeConfig = TYPE_MAP[typeKey] || TYPE_MAP['mesh'];
     frags.push({
-      cat: 'mesh',
-      label: 'MESH FRAGMENT',
+      cat: typeConfig.cat,
+      label: typeConfig.label,
       header: null,
       body: content,
       priority: 'low'
