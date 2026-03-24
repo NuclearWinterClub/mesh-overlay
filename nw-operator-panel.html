@@ -287,7 +287,7 @@
   <script>
     const TWITCH_CLIENT_ID  = 'czg89ot2fntobq8fnpgcdngjnx2vmg';
     const TWITCH_CHANNEL    = 'nuclear_winter_club';
-    const TWITCH_REDIRECT   = 'https://nuclearwinterclub.github.io/mesh-overlay/';
+    const TWITCH_REDIRECT   = 'https://nuclearwinterclub.github.io/mesh-overlay/nw-operator-panel.html';
     const TWITCH_SCOPE      = '';  // read-only, no scopes needed for public data
 
     // ── OPERATOR IDENTITY ──
@@ -459,7 +459,19 @@
     // ── BOOT ──
     loadOperator();
     loadNotes();
-    // Only auto-fetch if we already have a token
+
+    // Check if Twitch just redirected back with a token in the URL hash
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+    const incomingToken = hashParams.get('access_token');
+    if (incomingToken) {
+      saveTwitchToken(incomingToken);
+      // Clean the token out of the URL bar
+      history.replaceState(null, '', window.location.pathname);
+      document.getElementById('twitch-status').innerHTML =
+        '<span class="status-ok">✓ Twitch authorized. Fetching data...</span>';
+    }
+
+    // Only auto-fetch if we have a token
     if (getTwitchToken()) {
       fetchTwitchViewers();
       setInterval(fetchTwitchViewers, 60000);
