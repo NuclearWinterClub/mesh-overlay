@@ -246,12 +246,22 @@
     z-index: 20;
   }
 
+  #critical-flash {
+    position: absolute;
+    inset: 0;
+    background: var(--amber);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20;
+  }
+
   /* ── CATEGORY COLORS ── */
   .cat-mesh      { --cat-color: var(--green);  --cat-bg: rgba(84,251,1,0.22); }
   .cat-covenant  { --cat-color: var(--red);    --cat-bg: rgba(255,32,32,0.28); }
   .cat-resource  { --cat-color: var(--amber);  --cat-bg: rgba(255,184,0,0.24); }
   .cat-community { --cat-color: var(--blue);   --cat-bg: rgba(0,207,255,0.22); }
   .cat-oasis     { --cat-color: var(--purple); --cat-bg: rgba(204,68,255,0.22); }
+  .cat-critical  { --cat-color: var(--amber);  --cat-bg: rgba(255,184,0,0.32); }
 
   /* ── GLITCH ANIMATION ── */
   @keyframes glitch {
@@ -269,6 +279,12 @@
   @keyframes cov-pulse {
     0%, 100% { box-shadow: inset 0 0 0 1px var(--red-d); }
     50%       { box-shadow: inset 0 0 20px var(--red-d); }
+  }
+
+  /* ── CRITICAL ALERT PULSE ── */
+  @keyframes crit-pulse {
+    0%, 100% { box-shadow: inset 0 0 0 1px var(--amber); }
+    50%       { box-shadow: inset 0 0 20px var(--amber); }
   }
 
   /* ── ENTRY/EXIT ANIMATIONS ── */
@@ -325,6 +341,7 @@
 
 
   <div id="alert-flash"></div>
+  <div id="critical-flash"></div>
 </div>
 
 <script>
@@ -373,6 +390,7 @@ const TYPE_MAP = {
   'oasis':     { cat: 'oasis',     label: 'OASIS // TRANSMISSION' },
   'community': { cat: 'community', label: 'COMMUNITY' },
   'resource':  { cat: 'resource',  label: 'RESOURCE' },
+  'critical':  { cat: 'critical',  label: 'ALERT' },
 };
 
 // Convert MESH sheet rows into fragment objects
@@ -652,6 +670,7 @@ const CATEGORY_CONFIG = {
   resource:  { color: 'var(--amber)',  bg: 'rgba(255,184,0,0.24)',  bar: 'var(--amber)',  ts: 'RESOURCE' },
   community: { color: 'var(--blue)',   bg: 'rgba(0,207,255,0.22)', bar: 'var(--blue)',   ts: 'COMMUNITY' },
   oasis:     { color: 'var(--purple)', bg: 'rgba(204,68,255,0.22)', bar: 'var(--purple)', ts: 'OASIS' },
+  critical:  { color: 'var(--amber)',  bg: 'rgba(255,184,0,0.32)',  bar: 'var(--amber)',  ts: 'ALERT' },
 };
 
 const PRIORITY_COLORS = {
@@ -670,7 +689,8 @@ const labelType  = document.getElementById('label-type');
 const priorityBar = document.getElementById('priority-bar');
 const msgBody   = document.getElementById('msg-body');
 
-const alertFlash = document.getElementById('alert-flash');
+const alertFlash    = document.getElementById('alert-flash');
+const criticalFlash = document.getElementById('critical-flash');
 const progressEl = document.getElementById('progress-bar');
 
 // Shuffle array for random rotation
@@ -710,6 +730,24 @@ function triggerAlertFlash() {
   setTimeout(() => {
     alertFlash.style.transition = 'opacity 0.6s';
     alertFlash.style.opacity = '0';
+  }, 550);
+}
+
+// Critical flash (amber)
+function triggerCriticalFlash() {
+  criticalFlash.style.transition = 'opacity 0.1s';
+  criticalFlash.style.opacity = '0.15';
+  setTimeout(() => {
+    criticalFlash.style.transition = 'opacity 0.4s';
+    criticalFlash.style.opacity = '0';
+  }, 150);
+  setTimeout(() => {
+    criticalFlash.style.transition = 'opacity 0.1s';
+    criticalFlash.style.opacity = '0.1';
+  }, 400);
+  setTimeout(() => {
+    criticalFlash.style.transition = 'opacity 0.6s';
+    criticalFlash.style.opacity = '0';
   }, 550);
 }
 
@@ -810,10 +848,14 @@ function displayFragment(frag) {
     }, 1500);
   }, 550);
 
-  // Covenant-specific effects
+  // Category-specific effects
   if (frag.cat === 'covenant') {
     triggerAlertFlash();
     wrap.style.animation = 'cov-pulse 2s ease-in-out 3';
+    setTimeout(() => wrap.style.animation = '', 6100);
+  } else if (frag.cat === 'critical') {
+    triggerCriticalFlash();
+    wrap.style.animation = 'crit-pulse 2s ease-in-out 3';
     setTimeout(() => wrap.style.animation = '', 6100);
   } else {
     wrap.style.animation = '';
