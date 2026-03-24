@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signal Lock - Nuclear Winter</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #000;
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    .container {
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Static noise layer */
+    .static-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 100;
+      animation: static-fade 1.5s forwards;
+    }
+    
+    .static-layer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)"/%3E%3C/svg%3E');
+      opacity: 0.95;
+      animation: noise-anim 0.1s infinite;
+    }
+    
+    @keyframes noise-anim {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-5px, 5px); }
+      40% { transform: translate(5px, -5px); }
+      60% { transform: translate(-5px, -5px); }
+      80% { transform: translate(5px, 5px); }
+      100% { transform: translate(0, 0); }
+    }
+    
+    @keyframes static-fade {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; pointer-events: none; }
+    }
+    
+    /* Signal acquired text */
+    .signal-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 101;
+      text-align: center;
+      color: #00ff00;
+      font-size: 48px;
+      font-weight: bold;
+      letter-spacing: 8px;
+      text-shadow: 0 0 20px #00ff00;
+      opacity: 0;
+      animation: signal-pulse 1s 0.5s forwards;
+    }
+    
+    @keyframes signal-pulse {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+    }
+    
+    /* Main content */
+    .content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #00ff00;
+      opacity: 0;
+      animation: content-fade 0.5s 1.5s forwards;
+    }
+    
+    @keyframes content-fade {
+      to { opacity: 1; }
+    }
+    
+    .logo-container {
+      border: 4px solid #00ff00;
+      padding: 60px 80px;
+      background: rgba(0, 20, 0, 0.9);
+      box-shadow: 
+        0 0 40px rgba(0, 255, 0, 0.4),
+        inset 0 0 40px rgba(0, 255, 0, 0.1);
+      position: relative;
+      animation: border-glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes border-glow {
+      0%, 100% { box-shadow: 0 0 40px rgba(0, 255, 0, 0.4), inset 0 0 40px rgba(0, 255, 0, 0.1); }
+      50% { box-shadow: 0 0 60px rgba(0, 255, 0, 0.6), inset 0 0 60px rgba(0, 255, 0, 0.2); }
+    }
+    
+    .logo-title {
+      text-align: center;
+      font-size: 56px;
+      color: #00ffff;
+      letter-spacing: 8px;
+      margin-bottom: 10px;
+      text-shadow: 
+        0 0 20px #00ffff,
+        0 0 40px #00ffff;
+      font-weight: bold;
+    }
+    
+    .logo-subtitle {
+      text-align: center;
+      font-size: 42px;
+      color: #00ffff;
+      letter-spacing: 12px;
+      text-shadow: 
+        0 0 20px #00ffff,
+        0 0 40px #00ffff;
+      font-weight: bold;
+    }
+    
+    /* Nuclear symbol */
+    .nuclear-symbol {
+      width: 120px;
+      height: 120px;
+      margin: 30px auto;
+      position: relative;
+      animation: rotate-symbol 4s linear infinite;
+    }
+    
+    @keyframes rotate-symbol {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .nuclear-symbol::before {
+      content: '☢';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 100px;
+      color: #00ff00;
+      text-shadow: 0 0 30px #00ff00;
+    }
+    
+    .status-text {
+      text-align: center;
+      font-size: 28px;
+      color: #00ff00;
+      letter-spacing: 6px;
+      margin-top: 20px;
+      text-shadow: 0 0 15px #00ff00;
+      animation: pulse-glow 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; text-shadow: 0 0 25px #00ff00; }
+    }
+    
+    .info-bar {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 60px;
+      font-size: 16px;
+      color: #ffb000;
+      text-shadow: 0 0 10px #ffb000;
+    }
+    
+    /* CRT Effects */
+    .scanlines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    .vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+      z-index: 999;
+    }
+    
+    /* Controls */
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+    }
+    
+    .replay-btn {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 3px;
+      box-shadow: 0 0 10px #00ff00;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    
+    .replay-btn:hover {
+      background: #00ffff;
+      box-shadow: 0 0 20px #00ffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <button class="replay-btn" onclick="replay()">↻ REPLAY</button>
+    </div>
+    
+    <!-- Static layer that fades -->
+    <div class="static-layer"></div>
+    
+    <!-- Signal acquired text -->
+    <div class="signal-text">
+      SIGNAL<br>ACQUIRED
+    </div>
+    
+    <!-- Main content -->
+    <div class="content">
+      <div class="logo-container">
+        <div class="logo-title">NUCLEAR WINTER</div>
+        <div class="logo-subtitle">CLUB</div>
+        
+        <div class="nuclear-symbol"></div>
+        
+        <div class="status-text">RESISTANCE ACTIVE</div>
+      </div>
+      
+      <div class="info-bar">
+        <span>FREQUENCY: 94.7 MHz</span>
+        <span>ENCRYPTION: ACTIVE</span>
+      </div>
+    </div>
+    
+    <!-- CRT effects -->
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+  </div>
+  
+  <script>
+    function replay() {
+      location.reload();
+    }
+  </script>
+</body>
+</html>
