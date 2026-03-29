@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V1 OPERATOR — Alert Bypass Panel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green:   #00ff00;
+      --cyan:    #00ffff;
+      --magenta: #ff00ff;
+      --red:     #ff2200;
+      --amber:   #ffaa00;
+      --bg:      #080808;
+      --bg2:     #0d0d0d;
+      --panel-green:   rgba(0,255,0,0.06);
+      --panel-magenta: rgba(255,0,255,0.06);
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--green);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #000;
+      border-bottom: 3px solid var(--green);
+      padding: 18px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 30px rgba(0,255,0,0.2);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .v1-badge {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--green);
+      text-shadow: 0 0 20px var(--green);
+      letter-spacing: 4px;
+    }
+
+    .header-title {
+      font-size: 14px;
+      color: rgba(0,255,0,0.5);
+      letter-spacing: 3px;
+      line-height: 1.4;
+    }
+
+    .header-right {
+      text-align: right;
+    }
+
+    .live-clock {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 22px;
+      color: var(--amber);
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--amber);
+    }
+
+    .day-ae {
+      font-size: 13px;
+      color: rgba(255,170,0,0.5);
+      letter-spacing: 2px;
+      margin-top: 4px;
+    }
+
+    /* ── STATUS TICKER ── */
+    .status-ticker {
+      background: #000;
+      border-bottom: 1px solid rgba(0,255,0,0.2);
+      padding: 8px 30px;
+      font-size: 13px;
+      color: rgba(0,255,0,0.5);
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .ticker-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-dot {
+      0%,100%{ opacity: 1; transform: scale(1); }
+      50%    { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    #statusText { flex: 1; }
+
+    /* ── MAIN GRID ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 30px;
+      gap: 25px;
+    }
+
+    /* ── PANEL CARD ── */
+    .panel-card {
+      background: var(--bg2);
+      border: 2px solid;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-card.follower {
+      border-color: var(--green);
+      box-shadow: 0 0 30px rgba(0,255,0,0.15);
+    }
+
+    .panel-card.subscriber {
+      border-color: var(--magenta);
+      box-shadow: 0 0 30px rgba(255,0,255,0.15);
+    }
+
+    /* Corner accents */
+    .card-corner {
+      position: absolute;
+      width: 16px; height: 16px;
+      border-style: solid;
+    }
+    .panel-card.follower .card-corner  { border-color: var(--cyan); }
+    .panel-card.subscriber .card-corner { border-color: var(--cyan); }
+    .card-corner.tl { top:-2px; left:-2px;   border-width: 3px 0 0 3px; }
+    .card-corner.tr { top:-2px; right:-2px;  border-width: 3px 3px 0 0; }
+    .card-corner.bl { bottom:-2px; left:-2px;  border-width: 0 0 3px 3px; }
+    .card-corner.br { bottom:-2px; right:-2px; border-width: 0 3px 3px 0; }
+
+    /* Scanlines */
+    .card-scanlines {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg,
+        rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px,
+        transparent 1px, transparent 3px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+      padding: 28px 30px 30px;
+    }
+
+    /* Card header */
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+    }
+
+    .panel-card.follower  .card-header { border-bottom: 1px solid rgba(0,255,0,0.25); }
+    .panel-card.subscriber .card-header { border-bottom: 1px solid rgba(255,0,255,0.25); }
+
+    .card-icon { font-size: 32px; }
+
+    .card-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 3px;
+    }
+
+    .panel-card.follower  .card-title { color: var(--green); text-shadow: 0 0 10px var(--green); }
+    .panel-card.subscriber .card-title { color: var(--magenta); text-shadow: 0 0 10px var(--magenta); }
+
+    .card-subtitle {
+      font-size: 12px;
+      letter-spacing: 2px;
+      margin-top: 3px;
+    }
+
+    .panel-card.follower  .card-subtitle { color: rgba(0,255,0,0.4); }
+    .panel-card.subscriber .card-subtitle { color: rgba(255,0,255,0.4); }
+
+    /* Form fields */
+    .field-group {
+      margin-bottom: 18px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .panel-card.follower  .field-label { color: rgba(0,255,0,0.6); }
+    .panel-card.subscriber .field-label { color: rgba(255,0,255,0.6); }
+
+    .field-input {
+      width: 100%;
+      background: #000;
+      border: 2px solid;
+      color: #fff;
+      padding: 12px 16px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 20px;
+      outline: none;
+      letter-spacing: 2px;
+      transition: box-shadow 0.2s;
+    }
+
+    .panel-card.follower  .field-input { border-color: var(--green); }
+    .panel-card.subscriber .field-input { border-color: var(--magenta); }
+
+    .panel-card.follower  .field-input:focus { box-shadow: 0 0 15px rgba(0,255,0,0.4); }
+    .panel-card.subscriber .field-input:focus { box-shadow: 0 0 15px rgba(255,0,255,0.4); }
+
+    .field-input::placeholder { color: rgba(255,255,255,0.2); font-size: 16px; }
+
+    /* Tier selector */
+    .tier-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .tier-btn {
+      background: #000;
+      border: 2px solid rgba(255,0,255,0.3);
+      color: rgba(255,0,255,0.5);
+      padding: 10px 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .tier-btn:hover {
+      border-color: var(--magenta);
+      color: var(--magenta);
+      box-shadow: 0 0 10px rgba(255,0,255,0.3);
+    }
+
+    .tier-btn.active {
+      background: var(--magenta);
+      color: #000;
+      border-color: var(--magenta);
+      font-weight: bold;
+      box-shadow: 0 0 15px rgba(255,0,255,0.5);
+    }
+
+    /* Fire button */
+    .fire-btn {
+      width: 100%;
+      padding: 16px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      cursor: pointer;
+      border: none;
+      margin-top: 20px;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-card.follower .fire-btn {
+      background: var(--green);
+      color: #000;
+      box-shadow: 0 0 20px rgba(0,255,0,0.5);
+    }
+
+    .panel-card.subscriber .fire-btn {
+      background: var(--magenta);
+      color: #000;
+      box-shadow: 0 0 20px rgba(255,0,255,0.5);
+    }
+
+    .fire-btn:hover { transform: scale(1.02); filter: brightness(1.15); }
+    .fire-btn:active { transform: scale(0.98); }
+
+    .fire-btn.fired {
+      animation: btn-flash 0.4s forwards;
+    }
+
+    @keyframes btn-flash {
+      0%   { filter: brightness(3); transform: scale(0.98); }
+      100% { filter: brightness(1); transform: scale(1); }
+    }
+
+    /* Hotkey hint */
+    .hotkey-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    .panel-card.follower  .hotkey-row { color: rgba(0,255,0,0.35); }
+    .panel-card.subscriber .hotkey-row { color: rgba(255,0,255,0.35); }
+
+    /* ── FIRE LOG ── */
+    .log-section {
+      max-width: 1400px;
+      margin: 0 auto 30px;
+      padding: 0 30px;
+    }
+
+    .log-header {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: rgba(0,255,255,0.6);
+      border-bottom: 1px solid rgba(0,255,255,0.2);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 13px;
+      letter-spacing: 1px;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.02);
+      border-left: 3px solid;
+      animation: log-in 0.3s ease-out;
+    }
+
+    .log-entry.follower-log   { border-color: var(--green); }
+    .log-entry.subscriber-log { border-color: var(--magenta); }
+
+    @keyframes log-in {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .log-time  { color: rgba(0,255,255,0.5); flex-shrink: 0; }
+    .log-type  { flex-shrink: 0; font-weight: bold; }
+    .log-entry.follower-log   .log-type { color: var(--green); }
+    .log-entry.subscriber-log .log-type { color: var(--magenta); }
+    .log-name  { color: #fff; flex: 1; }
+    .log-tier  { color: rgba(255,255,255,0.3); flex-shrink: 0; font-size: 12px; }
+
+    .log-empty {
+      font-size: 13px;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 2px;
+      padding: 12px 14px;
+    }
+
+    /* ── INSTRUCTIONS FOOTER ── */
+    .instructions {
+      max-width: 1400px;
+      margin: 0 auto 30px;
+      padding: 0 30px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    .inst-card {
+      background: rgba(0,255,255,0.03);
+      border: 1px solid rgba(0,255,255,0.15);
+      padding: 18px 22px;
+    }
+
+    .inst-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      color: var(--cyan);
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+
+    .inst-body {
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 1px;
+      line-height: 1.8;
+    }
+
+    .inst-body code {
+      color: var(--amber);
+      background: rgba(255,170,0,0.1);
+      padding: 1px 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="v1-badge">V1</div>
+      <div class="header-title">
+        OPERATOR BYPASS PANEL<br>
+        <span style="color:rgba(0,255,0,0.35);font-size:12px">MANUAL ALERT OVERRIDE — STREAM EVENTS</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-clock" id="liveClock">00:00:00</div>
+      <div class="day-ae" id="dayAe">DAY 885 AE</div>
+    </div>
+  </div>
+
+  <!-- STATUS TICKER -->
+  <div class="status-ticker">
+    <div class="ticker-dot"></div>
+    <div id="statusText">BYPASS PANEL ONLINE — AWAITING OPERATOR INPUT</div>
+  </div>
+
+  <!-- MAIN PANELS -->
+  <div class="main-grid">
+
+    <!-- FOLLOWER PANEL -->
+    <div class="panel-card follower">
+      <div class="card-corner tl"></div>
+      <div class="card-corner tr"></div>
+      <div class="card-corner bl"></div>
+      <div class="card-corner br"></div>
+      <div class="card-scanlines"></div>
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-icon">📡</div>
+          <div>
+            <div class="card-title">NEW FOLLOWER</div>
+            <div class="card-subtitle">EMERGENCY BROADCAST SYSTEM · NEW SIGNAL ACQUIRED</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="followerName">USERNAME</label>
+          <input class="field-input" id="followerName"
+            placeholder="Enter Twitch username..."
+            maxlength="25" autocomplete="off">
+        </div>
+
+        <button class="fire-btn" id="followerFireBtn" onclick="fireFollower()">
+          ▶ FIRE FOLLOWER ALERT
+        </button>
+
+        <div class="hotkey-row">
+          <span>ENTER = FIRE when username field focused</span>
+          <span>ESC = CLEAR</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIBER PANEL -->
+    <div class="panel-card subscriber">
+      <div class="card-corner tl"></div>
+      <div class="card-corner tr"></div>
+      <div class="card-corner bl"></div>
+      <div class="card-corner br"></div>
+      <div class="card-scanlines"></div>
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-icon">☢</div>
+          <div>
+            <div class="card-title">SUBSCRIBER / RESUB / GIFT</div>
+            <div class="card-subtitle">SURVIVOR UPLINK · SECURE CHANNEL VERIFIED</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="subName">USERNAME</label>
+          <input class="field-input" id="subName"
+            placeholder="Enter Twitch username..."
+            maxlength="25" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">SUB TYPE</label>
+          <div class="tier-grid">
+            <button class="tier-btn active" data-tier="TIER 1"  onclick="selectTier(this)">TIER 1</button>
+            <button class="tier-btn"        data-tier="TIER 2"  onclick="selectTier(this)">TIER 2</button>
+            <button class="tier-btn"        data-tier="TIER 3"  onclick="selectTier(this)">TIER 3</button>
+            <button class="tier-btn"        data-tier="GIFTED"  onclick="selectTier(this)">GIFTED</button>
+            <button class="tier-btn"        data-tier="RESUB"   onclick="selectTier(this)">RESUB</button>
+          </div>
+        </div>
+
+        <button class="fire-btn" id="subFireBtn" onclick="fireSubscriber()">
+          ▶ FIRE SUBSCRIBER ALERT
+        </button>
+
+        <div class="hotkey-row">
+          <span>ENTER = FIRE when username field focused</span>
+          <span>ESC = CLEAR</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FIRE LOG -->
+  <div class="log-section">
+    <div class="log-header">⬡ ALERT DISPATCH LOG</div>
+    <div class="log-list" id="logList">
+      <div class="log-empty">No alerts fired this session.</div>
+    </div>
+  </div>
+
+  <!-- INSTRUCTIONS -->
+  <div class="instructions">
+    <div class="inst-card">
+      <div class="inst-title">OBS SETUP — OVERLAY FILES</div>
+      <div class="inst-body">
+        Add <code>nw-follower-alert-2.html</code> and <code>nw-subscriber-alert-2.html</code> as Browser Sources in OBS.
+        Set dimensions to <code>1920×1080</code>. Enable <code>Shutdown when not visible</code> OFF.
+        Both overlays must be open in the same Chromium instance as this panel to share localStorage.
+        This panel is operator-only — never put it on stream.
+      </div>
+    </div>
+    <div class="inst-card">
+      <div class="inst-title">USAGE — WHEN STREAMELEMENTS MISSES AN EVENT</div>
+      <div class="inst-body">
+        Type the username exactly as it appears in Twitch chat.
+        Select sub type if firing a subscriber alert.
+        Press ENTER or click FIRE. The alert fires on stream immediately.
+        Use the dispatch log to track what you've manually fired this session.
+        This panel has no effect on StreamElements — it fires independently.
+      </div>
+    </div>
+  </div>
+
+<script>
+  const DAY_AE = "885";
+  let selectedTier = 'TIER 1';
+  let logEntries = [];
+
+  // ── CLOCK ──
+  function tick() {
+    const n = new Date();
+    const t = [n.getHours(), n.getMinutes(), n.getSeconds()]
+      .map(v => String(v).padStart(2,'0')).join(':');
+    document.getElementById('liveClock').textContent = t;
+    document.getElementById('dayAe').textContent = `DAY ${DAY_AE} AE`;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ── TIER SELECT ──
+  function selectTier(btn) {
+    document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedTier = btn.dataset.tier;
+  }
+
+  // ── STATUS ──
+  function setStatus(msg) {
+    document.getElementById('statusText').textContent = msg;
+  }
+
+  // ── LOG ──
+  function addLog(type, name, tier) {
+    const n = new Date();
+    const t = [n.getHours(), n.getMinutes(), n.getSeconds()]
+      .map(v => String(v).padStart(2,'0')).join(':');
+
+    // Remove empty placeholder
+    const emptyEl = document.querySelector('.log-empty');
+    if (emptyEl) emptyEl.remove();
+
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}-log`;
+    entry.innerHTML = `
+      <span class="log-time">${t}</span>
+      <span class="log-type">${type === 'follower' ? 'FOLLOWER' : 'SUBSCRIBER'}</span>
+      <span class="log-name">${name}</span>
+      ${tier ? `<span class="log-tier">${tier}</span>` : ''}
+    `;
+
+    const list = document.getElementById('logList');
+    list.insertBefore(entry, list.firstChild);
+
+    // Keep log trimmed
+    while (list.children.length > 20) list.removeChild(list.lastChild);
+  }
+
+  // ── FLASH BUTTON ──
+  function flashBtn(id) {
+    const btn = document.getElementById(id);
+    btn.classList.remove('fired');
+    void btn.offsetWidth;
+    btn.classList.add('fired');
+  }
+
+  // ── FIRE FOLLOWER ──
+  function fireFollower() {
+    const input = document.getElementById('followerName');
+    const name  = input.value.trim();
+    if (!name) {
+      input.focus();
+      input.style.borderColor = '#ff2200';
+      setTimeout(() => input.style.borderColor = '#00ff00', 800);
+      return;
+    }
+
+    localStorage.setItem('nw_alert_follower', JSON.stringify({
+      type: 'follower',
+      name: name,
+      ts:   Date.now()
+    }));
+
+    flashBtn('followerFireBtn');
+    addLog('follower', name.toUpperCase(), null);
+    setStatus(`▶ FOLLOWER ALERT FIRED — ${name.toUpperCase()} — ${new Date().toLocaleTimeString()}`);
+    input.value = '';
+    input.focus();
+  }
+
+  // ── FIRE SUBSCRIBER ──
+  function fireSubscriber() {
+    const input = document.getElementById('subName');
+    const name  = input.value.trim();
+    if (!name) {
+      input.focus();
+      input.style.borderColor = '#ff2200';
+      setTimeout(() => input.style.borderColor = '#ff00ff', 800);
+      return;
+    }
+
+    localStorage.setItem('nw_alert_subscriber', JSON.stringify({
+      type: 'subscriber',
+      name: name,
+      tier: selectedTier,
+      ts:   Date.now()
+    }));
+
+    flashBtn('subFireBtn');
+    addLog('subscriber', name.toUpperCase(), selectedTier);
+    setStatus(`▶ SUBSCRIBER ALERT FIRED — ${name.toUpperCase()} — ${selectedTier} — ${new Date().toLocaleTimeString()}`);
+    input.value = '';
+    input.focus();
+  }
+
+  // ── KEYBOARD SHORTCUTS ──
+  document.getElementById('followerName').addEventListener('keydown', e => {
+    if (e.key === 'Enter')  fireFollower();
+    if (e.key === 'Escape') { document.getElementById('followerName').value = ''; }
+  });
+
+  document.getElementById('subName').addEventListener('keydown', e => {
+    if (e.key === 'Enter')  fireSubscriber();
+    if (e.key === 'Escape') { document.getElementById('subName').value = ''; }
+  });
+</script>
+</body>
+</html>

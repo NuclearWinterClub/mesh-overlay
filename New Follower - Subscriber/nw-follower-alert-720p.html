@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NW Follower Alert — OBS Overlay</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: transparent;
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden;
+      width: 1280px;
+      height: 720px;
+      position: relative;
+    }
+
+    /* ── ALERT WRAPPER — positioned top-center ── */
+    .alert-wrapper {
+      position: absolute;
+      top: 27px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 574px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .alert-wrapper.playing {
+      animation: alert-lifecycle 8s forwards;
+    }
+
+    @keyframes alert-lifecycle {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(-13px); }
+      8%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+      80%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+      95%  { opacity: 0; transform: translateX(-50%) translateY(5px); }
+      100% { opacity: 0; }
+    }
+
+    /* Radar background */
+    .radar-bg {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 307px; height: 307px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,255,0,0.04) 0%, transparent 70%);
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .radar-sweep {
+      position: absolute;
+      top: 0; left: 50%;
+      width: 2px; height: 50%;
+      background: linear-gradient(to bottom, #00ff00, transparent);
+      transform-origin: bottom center;
+      animation: radar-spin 2s linear infinite;
+      box-shadow: 0 0 10px #00ff00;
+    }
+
+    @keyframes radar-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .radar-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid rgba(0,255,0,0.2);
+    }
+    .radar-ring:nth-child(2) { width: 33%; height: 33%; }
+    .radar-ring:nth-child(3) { width: 66%; height: 66%; }
+    .radar-ring:nth-child(4) { width: 99%; height: 99%; }
+
+    .ping {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid #00ff00;
+      opacity: 0;
+    }
+    .ping:nth-child(5) { animation: ping-wave 1.5s 0.5s ease-out infinite; }
+    .ping:nth-child(6) { animation: ping-wave 1.5s 0.9s ease-out infinite; }
+    .ping:nth-child(7) { animation: ping-wave 1.5s 1.3s ease-out infinite; }
+
+    @keyframes ping-wave {
+      0%   { width: 13px; height: 13px; opacity: 0.8; }
+      100% { width: 253px; height: 253px; opacity: 0; }
+    }
+
+    /* Alert box */
+    .alert-box {
+      position: relative;
+      background: rgba(0,20,0,0.97);
+      border: 4px solid #00ff00;
+      padding: 23px 30px;
+      box-shadow: 0 0 40px rgba(0,255,0,0.5), inset 0 0 27px rgba(0,255,0,0.08);
+      z-index: 10;
+    }
+
+    .alert-box.glitch { animation: box-glitch 0.3s; }
+
+    @keyframes box-glitch {
+      0%  { transform: translate(0,0);     filter: hue-rotate(0deg); }
+      25% { transform: translate(-4px,4px); filter: hue-rotate(90deg); }
+      50% { transform: translate(4px,-4px); filter: hue-rotate(180deg); }
+      75% { transform: translate(-4px,-4px);filter: hue-rotate(270deg); }
+      100%{ transform: translate(0,0);     filter: hue-rotate(0deg); }
+    }
+
+    .corner { position: absolute; width: 13px; height: 13px; border-color: #00ffff; border-style: solid; }
+    .corner-tl { top:-4px; left:-4px;   border-width: 4px 0 0 4px; }
+    .corner-tr { top:-4px; right:-4px;  border-width: 4px 4px 0 0; }
+    .corner-bl { bottom:-4px; left:-4px;  border-width: 0 0 4px 4px; }
+    .corner-br { bottom:-4px; right:-4px; border-width: 0 4px 4px 0; }
+
+    .alert-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(0,255,0,0.3);
+    }
+
+    .ebs-tag {
+      font-size: 13px;
+      color: #00ff00;
+      letter-spacing: 4px;
+      text-shadow: 0 0 7px #00ff00;
+    }
+
+    .signal-strength {
+      font-size: 12px;
+      color: #00ffff;
+      letter-spacing: 3px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%,49%  { opacity: 1; }
+      50%,100%{ opacity: 0.3; }
+    }
+
+    .alert-content {
+      display: flex;
+      align-items: center;
+      gap: 23px;
+    }
+
+    .signal-icon {
+      font-size: 48px;
+      color: #00ff00;
+      text-shadow: 0 0 20px #00ff00;
+      flex-shrink: 0;
+      animation: icon-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes icon-pulse {
+      0%,100%{ transform: scale(1);    opacity: 0.8; }
+      50%    { transform: scale(1.15); opacity: 1; }
+    }
+
+    .alert-type {
+      font-size: 15px;
+      color: #00ffff;
+      letter-spacing: 5px;
+      margin-bottom: 7px;
+      text-shadow: 0 0 10px #00ffff;
+    }
+
+    .username {
+      font-size: 39px;
+      color: #fff;
+      font-weight: bold;
+      letter-spacing: 3px;
+      margin-bottom: 7px;
+      text-shadow: 0 0 13px #00ff00, 0 0 27px #00ff00;
+      animation: name-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes name-glow {
+      0%,100%{ text-shadow: 0 0 13px #00ff00, 0 0 27px #00ff00; }
+      50%    { text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
+    }
+
+    .alert-message {
+      font-size: 17px;
+      color: #00ff00;
+      letter-spacing: 3px;
+      text-shadow: 0 0 7px #00ff00;
+    }
+
+    .alert-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      padding-top: 12px;
+      border-top: 2px solid rgba(0,255,0,0.3);
+      font-size: 12px;
+      color: #00ff00;
+      letter-spacing: 3px;
+    }
+
+    .rec-dot { color: #ff0000; animation: blink 1s infinite; }
+
+    .scanlines {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg,
+        rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px,
+        transparent 1px, transparent 2px);
+      pointer-events: none;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="alert-wrapper" id="alertWrapper">
+    <div class="radar-bg">
+      <div class="radar-sweep"></div>
+      <div class="radar-ring"></div>
+      <div class="radar-ring"></div>
+      <div class="radar-ring"></div>
+      <div class="ping"></div>
+      <div class="ping"></div>
+      <div class="ping"></div>
+    </div>
+
+    <div class="alert-box" id="alertBox">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+
+      <div class="alert-header">
+        <div class="ebs-tag">⬡ EMERGENCY BROADCAST SYSTEM ⬡</div>
+        <div class="signal-strength">SIGNAL: ▂▄▆█ STRONG</div>
+      </div>
+
+      <div class="alert-content">
+        <div class="signal-icon">📡</div>
+        <div>
+          <div class="alert-type">NEW SIGNAL ACQUIRED</div>
+          <div class="username" id="displayName">AWAITING SIGNAL...</div>
+          <div class="alert-message">HAS JOINED THE RESISTANCE</div>
+        </div>
+      </div>
+
+      <div class="alert-footer">
+        <div><span class="rec-dot">●</span> SHELTER 14 BROADCAST</div>
+        <div id="footerTime">DAY 885 AE</div>
+      </div>
+
+      <div class="scanlines"></div>
+    </div>
+  </div>
+
+<script>
+  const DAY_AE = "885";
+  let alertTimer = null;
+
+  // ── LIVE CLOCK ──
+  function tick() {
+    const n = new Date();
+    const t = [n.getHours(), n.getMinutes(), n.getSeconds()]
+      .map(v => String(v).padStart(2,'0')).join(':');
+    const el = document.getElementById('footerTime');
+    if (el) el.textContent = `DAY ${DAY_AE} AE  ${t}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ── FIRE ALERT ──
+  function fireAlert(name) {
+    document.getElementById('displayName').textContent = name.toUpperCase();
+
+    const wrapper = document.getElementById('alertWrapper');
+    const box     = document.getElementById('alertBox');
+    wrapper.classList.remove('playing');
+    box.classList.remove('glitch');
+    void wrapper.offsetWidth;
+    wrapper.classList.add('playing');
+    box.classList.add('glitch');
+
+    if (alertTimer) clearTimeout(alertTimer);
+    alertTimer = setTimeout(() => {
+      wrapper.classList.remove('playing');
+    }, 8000);
+  }
+
+  // ── localStorage BUS ──
+  // Panel writes: { type:'follower', name:'USERNAME', ts: Date.now() }
+  let lastTs = 0;
+
+  function checkBus() {
+    try {
+      const raw = localStorage.getItem('nw_alert_follower');
+      if (!raw) return;
+      const payload = JSON.parse(raw);
+      if (payload.ts && payload.ts > lastTs) {
+        lastTs = payload.ts;
+        fireAlert(payload.name || 'SURVIVOR');
+      }
+    } catch(e) {}
+  }
+
+  setInterval(checkBus, 300);
+
+  // Also listen for storage events (same-origin cross-tab)
+  window.addEventListener('storage', e => {
+    if (e.key === 'nw_alert_follower') checkBus();
+  });
+</script>
+</body>
+</html>

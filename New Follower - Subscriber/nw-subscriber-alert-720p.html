@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NW Subscriber Alert — OBS Overlay</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: transparent;
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden;
+      width: 1280px;
+      height: 720px;
+      position: relative;
+    }
+
+    /* ── ALERT WRAPPER — positioned top-center ── */
+    .alert-wrapper {
+      position: absolute;
+      top: 27px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 627px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .alert-wrapper.playing {
+      animation: alert-lifecycle 10s forwards;
+    }
+
+    @keyframes alert-lifecycle {
+      0%   { opacity: 0; transform: translateX(-50%) scale(0.92); }
+      8%   { opacity: 1; transform: translateX(-50%) scale(1.02); }
+      12%  { opacity: 1; transform: translateX(-50%) scale(1); }
+      85%  { opacity: 1; transform: translateX(-50%) scale(1); }
+      97%  { opacity: 0; transform: translateX(-50%) scale(0.96); }
+      100% { opacity: 0; }
+    }
+
+    /* Static burst */
+    .static-burst {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #fff;
+      z-index: 50;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .static-burst.playing {
+      animation: static-pop 0.35s forwards;
+    }
+
+    @keyframes static-pop {
+      0%   { opacity: 0.9; }
+      100% { opacity: 0; }
+    }
+
+    /* Alert box */
+    .alert-box {
+      background: rgba(10,0,20,0.97);
+      border: 5px solid #ff00ff;
+      padding: 30px 37px;
+      box-shadow:
+        0 0 53px rgba(255,0,255,0.6),
+        0 0 107px rgba(255,0,255,0.2),
+        inset 0 0 40px rgba(255,0,255,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .alert-box::before {
+      content: '';
+      position: absolute;
+      top: -5px; left: -5px; right: -5px; bottom: -5px;
+      background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff, #00ffff);
+      background-size: 400% 400%;
+      animation: border-cycle 3s linear infinite;
+      z-index: -1;
+      filter: blur(5px);
+      opacity: 0.4;
+    }
+
+    @keyframes border-cycle {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .corner { position: absolute; width: 17px; height: 17px; border-color: #00ffff; border-style: solid; }
+    .corner-tl { top:-5px; left:-5px;   border-width: 5px 0 0 5px; }
+    .corner-tr { top:-5px; right:-5px;  border-width: 5px 5px 0 0; }
+    .corner-bl { bottom:-5px; left:-5px;  border-width: 0 0 5px 5px; }
+    .corner-br { bottom:-5px; right:-5px; border-width: 0 5px 5px 0; }
+
+    .data-stream {
+      position: absolute;
+      top: 0; right: 0;
+      width: 3px; height: 100%;
+      background: linear-gradient(to bottom, transparent, #ff00ff, transparent);
+      animation: stream-flow 1.5s linear infinite;
+      opacity: 0.5;
+    }
+    .data-stream:nth-child(2) { right: 6px; animation-delay: 0.5s; opacity: 0.25; }
+
+    @keyframes stream-flow {
+      from { transform: translateY(-100%); }
+      to   { transform: translateY(100%); }
+    }
+
+    .uplink-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid rgba(255,0,255,0.4);
+    }
+
+    .uplink-tag {
+      font-size: 15px;
+      color: #ff00ff;
+      letter-spacing: 5px;
+      text-shadow: 0 0 10px #ff00ff;
+      animation: tag-pulse 2s infinite;
+    }
+
+    @keyframes tag-pulse {
+      0%,100%{ opacity: 1; }
+      50%    { opacity: 0.6; }
+    }
+
+    .uplink-status {
+      font-size: 13px;
+      color: #00ffff;
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px #00ffff;
+    }
+
+    .uplink-content {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+
+    .uplink-visual {
+      flex-shrink: 0;
+      width: 87px; height: 87px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .uplink-icon {
+      font-size: 48px;
+      text-shadow: 0 0 20px #ff00ff;
+      animation: icon-spin 4s linear infinite;
+      z-index: 10;
+    }
+
+    @keyframes icon-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .uplink-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid #ff00ff;
+      opacity: 0;
+    }
+    .uplink-ring:nth-child(1) { animation: ring-expand 2s 0.0s ease-out infinite; }
+    .uplink-ring:nth-child(2) { animation: ring-expand 2s 0.7s ease-out infinite; }
+    .uplink-ring:nth-child(3) { animation: ring-expand 2s 1.4s ease-out infinite; }
+
+    @keyframes ring-expand {
+      0%   { width: 40px; height: 40px; opacity: 0.8; }
+      100% { width: 133px; height: 133px; opacity: 0; }
+    }
+
+    .uplink-type {
+      font-size: 17px;
+      color: #ff00ff;
+      letter-spacing: 4px;
+      text-shadow: 0 0 13px #ff00ff;
+      margin-bottom: 8px;
+    }
+
+    .username {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 35px;
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 13px #ff00ff, 0 0 27px #ff00ff;
+      animation: name-strobe 3s ease-in-out infinite;
+    }
+
+    @keyframes name-strobe {
+      0%,100%{ text-shadow: 0 0 13px #ff00ff, 0 0 27px #ff00ff; }
+      50%    { text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
+    }
+
+    .uplink-message {
+      font-size: 19px;
+      color: #00ffff;
+      letter-spacing: 4px;
+      text-shadow: 0 0 10px #00ffff;
+      margin-bottom: 10px;
+    }
+
+    .tier-badge {
+      display: inline-block;
+      background: #ff00ff;
+      color: #000;
+      font-size: 13px;
+      padding: 5px 17px;
+      letter-spacing: 4px;
+      font-weight: bold;
+      box-shadow: 0 0 13px #ff00ff;
+    }
+
+    .uplink-footer {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 15px;
+      border-top: 2px solid rgba(255,0,255,0.4);
+      font-size: 12px;
+      color: #ff00ff;
+      letter-spacing: 3px;
+    }
+
+    .rec-dot { color: #ff0000; animation: blink 1s infinite; }
+
+    @keyframes blink {
+      0%,49%  { opacity: 1; }
+      50%,100%{ opacity: 0; }
+    }
+
+    .scanlines {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg,
+        rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px,
+        transparent 1px, transparent 2px);
+      pointer-events: none;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="alert-wrapper" id="alertWrapper">
+    <div class="static-burst" id="staticBurst"></div>
+
+    <div class="alert-box" id="alertBox">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="data-stream"></div>
+      <div class="data-stream"></div>
+
+      <div class="uplink-header">
+        <div class="uplink-tag">⬡ SURVIVOR UPLINK ESTABLISHED ⬡</div>
+        <div class="uplink-status">ENCRYPTION: ACTIVE</div>
+      </div>
+
+      <div class="uplink-content">
+        <div class="uplink-visual">
+          <div class="uplink-ring"></div>
+          <div class="uplink-ring"></div>
+          <div class="uplink-ring"></div>
+          <div class="uplink-icon">☢</div>
+        </div>
+
+        <div>
+          <div class="uplink-type" id="uplinkType">SECURE CHANNEL VERIFIED</div>
+          <div class="username" id="displayName">AWAITING UPLINK...</div>
+          <div class="uplink-message" id="uplinkMessage">HAS JOINED THE RESISTANCE</div>
+          <div class="tier-badge" id="tierBadge">TIER 1 CLEARANCE</div>
+        </div>
+      </div>
+
+      <div class="uplink-footer">
+        <div><span class="rec-dot">●</span> SHELTER 14 UPLINK</div>
+        <div id="footerTime">DAY 885 AE</div>
+      </div>
+
+      <div class="scanlines"></div>
+    </div>
+  </div>
+
+<script>
+  const DAY_AE = "885";
+  let alertTimer = null;
+
+  // Sub type display config
+  const SUB_CONFIG = {
+    'TIER 1':  { type: 'SECURE CHANNEL VERIFIED', message: 'HAS FORTIFIED THE BUNKER', badge: 'TIER 1 CLEARANCE' },
+    'TIER 2':  { type: 'ENHANCED CLEARANCE GRANTED', message: 'HAS FORTIFIED THE BUNKER', badge: 'TIER 2 CLEARANCE' },
+    'TIER 3':  { type: 'COMMAND LEVEL ACCESS GRANTED', message: 'HAS FORTIFIED THE BUNKER', badge: 'TIER 3 CLEARANCE' },
+    'GIFTED':  { type: 'GIFT TRANSMISSION RECEIVED', message: 'HAS ARMED A SURVIVOR', badge: 'GIFTED CLEARANCE' },
+    'RESUB':   { type: 'VETERAN SIGNAL CONFIRMED', message: 'HAS RETURNED TO THE BUNKER', badge: 'VETERAN CLEARANCE' },
+  };
+
+  // ── LIVE CLOCK ──
+  function tick() {
+    const n = new Date();
+    const t = [n.getHours(), n.getMinutes(), n.getSeconds()]
+      .map(v => String(v).padStart(2,'0')).join(':');
+    const el = document.getElementById('footerTime');
+    if (el) el.textContent = `DAY ${DAY_AE} AE  ${t}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ── FIRE ALERT ──
+  function fireAlert(name, tier) {
+    const cfg = SUB_CONFIG[tier] || SUB_CONFIG['TIER 1'];
+    document.getElementById('displayName').textContent  = name.toUpperCase();
+    document.getElementById('uplinkType').textContent   = cfg.type;
+    document.getElementById('uplinkMessage').textContent = cfg.message;
+    document.getElementById('tierBadge').textContent    = cfg.badge;
+
+    const wrapper = document.getElementById('alertWrapper');
+    const burst   = document.getElementById('staticBurst');
+    wrapper.classList.remove('playing');
+    burst.classList.remove('playing');
+    void wrapper.offsetWidth;
+    wrapper.classList.add('playing');
+    burst.classList.add('playing');
+
+    if (alertTimer) clearTimeout(alertTimer);
+    alertTimer = setTimeout(() => {
+      wrapper.classList.remove('playing');
+    }, 10000);
+  }
+
+  // ── localStorage BUS ──
+  // Panel writes: { type:'subscriber', name:'USERNAME', tier:'TIER 1', ts: Date.now() }
+  let lastTs = 0;
+
+  function checkBus() {
+    try {
+      const raw = localStorage.getItem('nw_alert_subscriber');
+      if (!raw) return;
+      const payload = JSON.parse(raw);
+      if (payload.ts && payload.ts > lastTs) {
+        lastTs = payload.ts;
+        fireAlert(payload.name || 'SURVIVOR', payload.tier || 'TIER 1');
+      }
+    } catch(e) {}
+  }
+
+  setInterval(checkBus, 300);
+
+  window.addEventListener('storage', e => {
+    if (e.key === 'nw_alert_subscriber') checkBus();
+  });
+</script>
+</body>
+</html>
