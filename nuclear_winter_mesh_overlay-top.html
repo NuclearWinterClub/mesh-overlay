@@ -22,17 +22,19 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --green:   #54FB01;
-    --green-d: #3DAA00;
-    --green-x: #1A4A00;
-    --amber:   #FFB800;
-    --amber-d: #CC7700;
-    --red:     #FF2020;
-    --red-d:   #8B0000;
-    --blue:    #00CFFF;
-    --blue-d:  #006688;
-    --purple:  #CC44FF;
-    --white:   #E8F5E8;
+    --mesh-blue: #4488FF;
+    --neon:      #39FF14;
+    --amber:     #FFAA00;
+    --amber-d:   #CC7700;
+    --red:       #FF2200;
+    --red-d:     #8B0000;
+    --magenta:   #FF00FF;
+    --yellow:    #FFFF00;
+    --white:     #FFFFFF;
+    --green:     #54FB01;
+    --green-d:   #3DAA00;
+    --green-x:   #1A4A00;
+    --dim:       #4A6B4A;
     --dim:     #4A6B4A;
     --bg:      rgba(0,0,0,0.97);
     --bg-solid:  #000800;
@@ -256,12 +258,13 @@
   }
 
   /* ── CATEGORY COLORS ── */
-  .cat-mesh      { --cat-color: var(--green);  --cat-bg: rgba(84,251,1,0.22); }
-  .cat-covenant  { --cat-color: var(--red);    --cat-bg: rgba(255,32,32,0.28); }
-  .cat-resource  { --cat-color: var(--amber);  --cat-bg: rgba(255,184,0,0.24); }
-  .cat-community { --cat-color: var(--blue);   --cat-bg: rgba(0,207,255,0.22); }
-  .cat-oasis     { --cat-color: var(--purple); --cat-bg: rgba(204,68,255,0.22); }
-  .cat-critical  { --cat-color: var(--amber);  --cat-bg: rgba(255,184,0,0.32); }
+  .cat-mesh      { --cat-color: var(--mesh-blue); --cat-bg: rgba(68,136,255,0.22); }
+  .cat-covenant  { --cat-color: var(--red);       --cat-bg: rgba(255,34,0,0.28); }
+  .cat-resource  { --cat-color: var(--yellow);    --cat-bg: rgba(255,255,0,0.18); }
+  .cat-community { --cat-color: var(--white);     --cat-bg: rgba(255,255,255,0.14); }
+  .cat-oasis     { --cat-color: var(--neon);      --cat-bg: rgba(57,255,20,0.18); }
+  .cat-critical  { --cat-color: var(--amber);     --cat-bg: rgba(255,170,0,0.32); }
+  .cat-operator  { --cat-color: var(--magenta);   --cat-bg: rgba(255,0,255,0.18); }
 
   /* ── GLITCH ANIMATION ── */
   @keyframes glitch {
@@ -391,6 +394,7 @@ const TYPE_MAP = {
   'community': { cat: 'community', label: 'COMMUNITY' },
   'resource':  { cat: 'resource',  label: 'RESOURCE' },
   'critical':  { cat: 'critical',  label: 'ALERT' },
+  'operator':  { cat: 'operator',  label: 'OPERATOR' },
 };
 
 // Convert MESH sheet rows into fragment objects
@@ -508,12 +512,13 @@ const FRAGMENTS = [
 // ═══════════════════════════════════════════
 
 const CATEGORY_CONFIG = {
-  mesh:      { color: 'var(--green)',  bg: 'rgba(84,251,1,0.22)',   bar: 'var(--green)',  ts: 'MESH' },
-  covenant:  { color: 'var(--red)',    bg: 'rgba(255,32,32,0.28)',  bar: 'var(--red)',    ts: 'ALERT' },
-  resource:  { color: 'var(--amber)',  bg: 'rgba(255,184,0,0.24)',  bar: 'var(--amber)',  ts: 'RESOURCE' },
-  community: { color: 'var(--blue)',   bg: 'rgba(0,207,255,0.22)', bar: 'var(--blue)',   ts: 'COMMUNITY' },
-  oasis:     { color: 'var(--purple)', bg: 'rgba(204,68,255,0.22)', bar: 'var(--purple)', ts: 'OASIS' },
-  critical:  { color: 'var(--amber)',  bg: 'rgba(255,184,0,0.32)',  bar: 'var(--amber)',  ts: 'ALERT' },
+  mesh:      { color: 'var(--mesh-blue)', bg: 'rgba(68,136,255,0.22)',  bar: 'var(--mesh-blue)', ts: 'MESH' },
+  covenant:  { color: 'var(--red)',       bg: 'rgba(255,34,0,0.28)',    bar: 'var(--red)',       ts: 'ALERT' },
+  resource:  { color: 'var(--yellow)',    bg: 'rgba(255,255,0,0.18)',   bar: 'var(--yellow)',    ts: 'RESOURCE' },
+  community: { color: 'var(--white)',     bg: 'rgba(255,255,255,0.14)', bar: 'var(--white)',     ts: 'COMMUNITY' },
+  oasis:     { color: 'var(--neon)',      bg: 'rgba(57,255,20,0.18)',   bar: 'var(--neon)',      ts: 'OASIS' },
+  critical:  { color: 'var(--amber)',     bg: 'rgba(255,170,0,0.32)',   bar: 'var(--amber)',     ts: 'ALERT' },
+  operator:  { color: 'var(--magenta)',   bg: 'rgba(255,0,255,0.18)',   bar: 'var(--magenta)',   ts: 'OPERATOR' },
 };
 
 const PRIORITY_COLORS = {
