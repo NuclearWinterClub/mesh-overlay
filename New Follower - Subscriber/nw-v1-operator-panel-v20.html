@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V1 OPERATOR — Control Panel v20</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green:   #00ff00;
+      --cyan:    #00ffff;
+      --magenta: #ff00ff;
+      --red:     #ff2200;
+      --amber:   #ffaa00;
+      --bg:      #080808;
+      --bg2:     #0d0d0d;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--green);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #000;
+      border-bottom: 3px solid var(--green);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 30px rgba(0,255,0,0.2);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+
+    .v1-badge {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--green);
+      text-shadow: 0 0 20px var(--green);
+      letter-spacing: 4px;
+    }
+
+    .header-title {
+      font-size: 12px;
+      color: rgba(0,255,0,0.5);
+      letter-spacing: 2px;
+      line-height: 1.5;
+    }
+
+    .header-right { text-align: right; }
+
+    .live-clock {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      color: var(--amber);
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--amber);
+    }
+
+    .day-ae {
+      font-size: 11px;
+      color: rgba(255,170,0,0.5);
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+
+    /* ── STATUS TICKER ── */
+    .status-ticker {
+      background: #000;
+      border-bottom: 1px solid rgba(0,255,0,0.2);
+      padding: 6px 20px;
+      font-size: 12px;
+      color: rgba(0,255,0,0.5);
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .ticker-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-dot {
+      0%,100%{ opacity: 1; transform: scale(1); }
+      50%    { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    #statusText { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .window-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      font-size: 11px;
+      letter-spacing: 2px;
+    }
+
+    .window-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .window-dot.open   { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse-dot 1s ease-in-out infinite; }
+    .window-dot.closed { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .window-label.open   { color: var(--green); }
+    .window-label.closed { color: var(--red); }
+
+    /* ── TAB BAR ── */
+    .tab-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      border-bottom: 2px solid rgba(0,255,0,0.2);
+    }
+
+    .tab-btn {
+      background: #000;
+      border: none;
+      border-right: 1px solid rgba(0,255,0,0.1);
+      padding: 11px 0;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: rgba(255,255,255,0.25);
+      position: relative;
+    }
+
+    .tab-btn:last-child { border-right: none; }
+    .tab-btn:hover { color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.03); }
+
+    .tab-btn[data-tab="follower"].active   { background: var(--green);   color: #000; font-weight: 900; }
+    .tab-btn[data-tab="subscriber"].active { background: var(--magenta); color: #000; font-weight: 900; }
+    .tab-btn[data-tab="mesh"].active       { background: var(--amber);   color: #000; font-weight: 900; }
+    .tab-btn[data-tab="log"].active        { background: var(--cyan);    color: #000; font-weight: 900; }
+
+    .tab-badge {
+      display: inline-block;
+      background: var(--red);
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 5px;
+      margin-left: 4px;
+      font-family: 'Share Tech Mono', monospace;
+      vertical-align: middle;
+      animation: pulse-dot 1s infinite;
+    }
+
+    /* ── TAB PANELS ── */
+    .tab-panel { display: none; padding: 20px; }
+    .tab-panel.active { display: block; }
+
+    /* ── SHARED FIELDS ── */
+    .field-group { margin-bottom: 16px; }
+
+    .field-label {
+      font-size: 11px;
+      letter-spacing: 3px;
+      margin-bottom: 7px;
+      display: block;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .field-label.green   { color: rgba(0,255,0,0.6); }
+    .field-label.magenta { color: rgba(255,0,255,0.6); }
+    .field-label.amber   { color: rgba(255,170,0,0.6); }
+
+    .field-input {
+      width: 100%;
+      background: #000;
+      border: 2px solid;
+      color: #fff;
+      padding: 11px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 18px;
+      outline: none;
+      letter-spacing: 2px;
+      transition: box-shadow 0.2s;
+    }
+
+    .field-input.green   { border-color: var(--green); }
+    .field-input.magenta { border-color: var(--magenta); }
+    .field-input.amber   { border-color: var(--amber); font-size: 14px; }
+
+    .field-input.green:focus   { box-shadow: 0 0 15px rgba(0,255,0,0.4); }
+    .field-input.magenta:focus { box-shadow: 0 0 15px rgba(255,0,255,0.4); }
+    .field-input.amber:focus   { box-shadow: 0 0 15px rgba(255,170,0,0.4); }
+    .field-input::placeholder  { color: rgba(255,255,255,0.2); font-size: 13px; }
+
+    .field-textarea {
+      width: 100%;
+      background: #000;
+      border: 2px solid var(--amber);
+      color: #fff;
+      padding: 11px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      outline: none;
+      letter-spacing: 1px;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 80px;
+      transition: box-shadow 0.2s;
+    }
+
+    .field-textarea:focus { box-shadow: 0 0 15px rgba(255,170,0,0.4); }
+    .field-textarea::placeholder { color: rgba(255,255,255,0.2); font-size: 12px; }
+
+    .field-select {
+      width: 100%;
+      background: #000;
+      border: 2px solid var(--amber);
+      color: var(--amber);
+      padding: 10px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      letter-spacing: 2px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23ffaa00' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 30px;
+    }
+
+    .field-select:focus  { box-shadow: 0 0 15px rgba(255,170,0,0.4); }
+    .field-select option { background: #0d0d0d; color: #fff; }
+
+    .char-counter { text-align: right; font-size: 11px; letter-spacing: 2px; margin-top: 4px; color: rgba(255,170,0,0.4); }
+    .char-counter.warn  { color: var(--amber); }
+    .char-counter.limit { color: var(--red); }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* Tier selector */
+    .tier-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+
+    .tier-btn {
+      background: #000;
+      border: 2px solid rgba(255,0,255,0.3);
+      color: rgba(255,0,255,0.5);
+      padding: 9px 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .tier-btn:hover  { border-color: var(--magenta); color: var(--magenta); box-shadow: 0 0 10px rgba(255,0,255,0.3); }
+    .tier-btn.active { background: var(--magenta); color: #000; border-color: var(--magenta); font-weight: bold; box-shadow: 0 0 15px rgba(255,0,255,0.5); }
+
+    /* Buttons */
+    .fire-btn {
+      width: 100%;
+      padding: 14px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      cursor: pointer;
+      border: none;
+      margin-top: 16px;
+      transition: all 0.15s;
+    }
+
+    .fire-btn.green   { background: var(--green);   color: #000; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
+    .fire-btn.magenta { background: var(--magenta); color: #000; box-shadow: 0 0 20px rgba(255,0,255,0.5); }
+    .fire-btn.amber   { background: var(--amber);   color: #000; box-shadow: 0 0 20px rgba(255,170,0,0.5); font-size: 13px; letter-spacing: 3px; }
+
+    .fire-btn:hover  { transform: scale(1.02); filter: brightness(1.15); }
+    .fire-btn:active { transform: scale(0.98); }
+    .fire-btn.fired  { animation: btn-flash 0.4s forwards; }
+
+    @keyframes btn-flash {
+      0%   { filter: brightness(3); transform: scale(0.98); }
+      100% { filter: brightness(1); transform: scale(1); }
+    }
+
+    .clear-btn {
+      width: 100%;
+      padding: 9px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 3px;
+      cursor: pointer;
+      background: #111;
+      color: rgba(255,170,0,0.4);
+      border: 1px solid rgba(255,170,0,0.2);
+      margin-top: 8px;
+      transition: all 0.15s;
+    }
+
+    .clear-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+    .hotkey-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* Preview */
+    .mesh-preview {
+      background: rgba(255,170,0,0.04);
+      border: 1px solid rgba(255,170,0,0.2);
+      padding: 12px 14px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      line-height: 1.7;
+      margin-top: 14px;
+    }
+
+    .preview-label { font-size: 10px; letter-spacing: 3px; color: rgba(255,170,0,0.4); margin-bottom: 6px; }
+    .preview-type  { color: var(--amber); font-weight: bold; }
+    .preview-body  { color: rgba(255,255,255,0.7); margin-top: 5px; word-break: break-word; }
+    .preview-empty { color: rgba(255,255,255,0.2); font-style: italic; }
+
+    /* Log tab */
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 7px 10px;
+      background: rgba(255,255,255,0.02);
+      border-left: 3px solid;
+      animation: log-in 0.3s ease-out;
+    }
+
+    .log-entry.follower-log   { border-color: var(--green); }
+    .log-entry.subscriber-log { border-color: var(--magenta); }
+    .log-entry.mesh-log       { border-color: var(--amber); }
+
+    @keyframes log-in {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .log-time  { color: rgba(0,255,255,0.5); flex-shrink: 0; font-size: 11px; }
+    .log-type  { flex-shrink: 0; font-weight: bold; font-size: 11px; }
+    .log-entry.follower-log   .log-type { color: var(--green); }
+    .log-entry.subscriber-log .log-type { color: var(--magenta); }
+    .log-entry.mesh-log       .log-type { color: var(--amber); }
+    .log-name  { color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-extra { color: rgba(255,255,255,0.3); flex-shrink: 0; font-size: 11px; }
+    .log-empty { font-size: 12px; color: rgba(255,255,255,0.15); letter-spacing: 2px; padding: 14px 10px; }
+
+    .log-clear-btn {
+      width: 100%;
+      padding: 9px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      cursor: pointer;
+      background: #111;
+      color: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-top: 10px;
+      transition: all 0.15s;
+    }
+
+    .log-clear-btn:hover { color: var(--red); border-color: var(--red); }
+
+    /* ── MESH TRANSMISSION TYPE COLORS ── */
+    /* Default amber is overridden per type via JS on the tab-mesh panel */
+    .mesh-type-banner {
+      display: none;
+      padding: 7px 12px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      border-left: 3px solid;
+      margin-bottom: 14px;
+      animation: log-in 0.3s ease-out;
+    }
+    .mesh-type-banner.visible { display: block; }
+
+    /* ── LOG CYCLE INPUT ── */
+    .log-tab-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0,255,255,0.15);
+    }
+    .log-tab-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: rgba(0,255,255,0.5);
+    }
+    .cycle-field { display: flex; align-items: center; gap: 8px; }
+    .cycle-label { font-size: 10px; letter-spacing: 3px; color: rgba(0,255,255,0.4); }
+    .cycle-input {
+      background: #000;
+      border: 1px solid rgba(0,255,255,0.25);
+      color: var(--cyan);
+      padding: 4px 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      width: 130px;
+      outline: none;
+      text-align: center;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .cycle-input:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,255,255,0.2); }
+
+    /* ── OPERATOR DOCK ── */
+    .operator-dock {
+      background: #050505;
+      border-bottom: 2px solid rgba(0,255,255,0.25);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dock-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: rgba(0,255,255,0.4);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .dock-sep {
+      width: 1px;
+      height: 28px;
+      background: rgba(0,255,255,0.15);
+      flex-shrink: 0;
+    }
+
+    .dock-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .dock-field-label {
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: rgba(0,255,255,0.35);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .dock-input {
+      background: #000;
+      border: 1px solid rgba(0,255,255,0.2);
+      color: var(--cyan);
+      padding: 5px 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 2px;
+      outline: none;
+      flex: 1;
+      min-width: 0;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .dock-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 8px rgba(0,255,255,0.25);
+    }
+
+    .dock-input::placeholder {
+      color: rgba(0,255,255,0.18);
+      font-size: 11px;
+    }
+
+    .dock-select {
+      background: #000;
+      border: 1px solid rgba(0,255,255,0.2);
+      color: var(--cyan);
+      padding: 5px 28px 5px 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2300ffff' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      flex: 1;
+      min-width: 0;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .dock-select:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 8px rgba(0,255,255,0.25);
+    }
+
+    .dock-select option { background: #0d0d0d; color: #fff; }
+
+    .dock-identity-display {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: rgba(0,255,255,0.5);
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-align: right;
+      min-width: 120px;
+    }
+
+    .dock-identity-display span {
+      color: var(--cyan);
+      text-shadow: 0 0 6px rgba(0,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="v1-badge">V1</div>
+      <div class="header-title">
+        OPERATOR CONTROL PANEL<br>
+        <span style="color:rgba(0,255,0,0.3);font-size:11px">ALERT OVERRIDE · MESH DISPATCH · STREAM EVENTS</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-clock" id="liveClock">00:00:00</div>
+      <div class="day-ae" id="dayAe">DAY 886 AE</div>
+    </div>
+  </div>
+
+  <!-- STATUS TICKER -->
+  <div class="status-ticker">
+    <div class="ticker-dot"></div>
+    <div id="statusText">V1 PANEL ONLINE — AWAITING INPUT</div>
+    <div class="window-status">
+      <div class="window-dot" id="windowDot"></div>
+      <div class="window-label" id="windowLabel">CHECKING...</div>
+    </div>
+  </div>
+
+  <!-- OPERATOR DOCK -->
+  <div class="operator-dock">
+    <div class="dock-label">V1 OPERATOR DOCK</div>
+    <div class="dock-sep"></div>
+    <div class="dock-field">
+      <span class="dock-field-label">CALLSIGN</span>
+      <input class="dock-input" id="operatorCallsign"
+        placeholder="Enter operator name..."
+        maxlength="30" autocomplete="off"
+        oninput="saveOperatorIdentity(); updateDockDisplay()">
+    </div>
+    <div class="dock-sep"></div>
+    <div class="dock-field">
+      <span class="dock-field-label">SETTLEMENT</span>
+      <select class="dock-select" id="operatorSettlement"
+        onchange="saveOperatorIdentity(); updateDockDisplay()">
+        <option value="">— SELECT —</option>
+        <option value="OASIS">OASIS · San Francisco, CA</option>
+        <option value="AMBER POST">AMBER POST · Santa Clara, CA</option>
+        <option value="SALTLINE">SALTLINE · Santa Cruz, CA</option>
+        <option value="GRID 9F">GRID 9F</option>
+        <option value="FORGE">FORGE</option>
+        <option value="HAVEN">HAVEN</option>
+        <option value="CROSSING">CROSSING</option>
+      </select>
+    </div>
+    <div class="dock-sep"></div>
+    <div class="dock-identity-display" id="dockIdentityDisplay">
+      UNIDENTIFIED
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="follower"   onclick="switchTab('follower')">📡 FOLLOWER</button>
+    <button class="tab-btn"        data-tab="subscriber" onclick="switchTab('subscriber')">☢ SUBSCRIBER</button>
+    <button class="tab-btn"        data-tab="mesh"       onclick="switchTab('mesh')">⬡ MESH</button>
+    <button class="tab-btn"        data-tab="log"        onclick="switchTab('log')">▦ LOG <span class="tab-badge" id="logBadge" style="display:none">0</span></button>
+  </div>
+
+  <!-- TAB: FOLLOWER -->
+  <div class="tab-panel active" id="tab-follower">
+    <div class="field-group">
+      <label class="field-label green">USERNAME</label>
+      <input class="field-input green" id="followerName"
+        placeholder="Enter Twitch username..."
+        maxlength="25" autocomplete="off">
+    </div>
+    <button class="fire-btn green" id="followerFireBtn" onclick="fireFollower()">
+      ▶ FIRE FOLLOWER ALERT
+    </button>
+    <div class="hotkey-row"><span>ENTER = FIRE</span><span>ESC = CLEAR</span></div>
+  </div>
+
+  <!-- TAB: SUBSCRIBER -->
+  <div class="tab-panel" id="tab-subscriber">
+    <div class="field-group">
+      <label class="field-label magenta">USERNAME</label>
+      <input class="field-input magenta" id="subName"
+        placeholder="Enter Twitch username..."
+        maxlength="25" autocomplete="off">
+    </div>
+    <div class="field-group">
+      <label class="field-label magenta">SUB TYPE</label>
+      <div class="tier-grid">
+        <button class="tier-btn active" data-tier="TIER 1"  onclick="selectTier(this)">TIER 1</button>
+        <button class="tier-btn"        data-tier="TIER 2"  onclick="selectTier(this)">TIER 2</button>
+        <button class="tier-btn"        data-tier="TIER 3"  onclick="selectTier(this)">TIER 3</button>
+        <button class="tier-btn"        data-tier="GIFTED"  onclick="selectTier(this)">GIFTED</button>
+        <button class="tier-btn"        data-tier="RESUB"   onclick="selectTier(this)">RESUB</button>
+      </div>
+    </div>
+    <button class="fire-btn magenta" id="subFireBtn" onclick="fireSubscriber()">
+      ▶ FIRE SUBSCRIBER ALERT
+    </button>
+    <div class="hotkey-row"><span>ENTER = FIRE</span><span>ESC = CLEAR</span></div>
+  </div>
+
+  <!-- TAB: MESH -->
+  <div class="tab-panel" id="tab-mesh">
+    <div class="mesh-type-banner" id="meshTypeBanner"></div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label amber">TRANSMISSION TYPE</label>
+        <select class="field-select" id="meshType" onchange="applyMeshTypeColor(this.value); updatePreview();">
+          <option value="MESH FRAGMENT">MESH FRAGMENT</option>
+          <option value="CHRONICLE">CHRONICLE / COMMUNITY RECORD</option>
+          <option value="COVENANT INTEL">COVENANT INTEL</option>
+          <option value="OPEN THREAD">OPEN THREAD</option>
+          <option value="MINOR ALERT">MINOR ALERT</option>
+          <option value="OPERATOR">OPERATOR</option>
+          <option value="RESOURCE">RESOURCE</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label amber">PRIORITY</label>
+        <select class="field-select" id="meshPriority" onchange="updatePreview()">
+          <option value="STANDARD">STANDARD</option>
+          <option value="URGENT">URGENT</option>
+          <option value="CRITICAL">CRITICAL</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label amber">CYCLE / ORIGIN TAG <span style="opacity:0.4">(optional)</span></label>
+      <input class="field-input amber" id="meshOrigin"
+        placeholder="e.g. CYCLE:053 · NODE 7-ECHO"
+        maxlength="40" autocomplete="off"
+        oninput="updatePreview()">
+    </div>
+
+    <div class="field-group" style="margin-bottom:4px">
+      <label class="field-label amber">TRANSMISSION BODY</label>
+      <textarea class="field-textarea" id="meshBody"
+        placeholder="Enter MESH fragment... short, urgent, in-world."
+        maxlength="280"
+        oninput="updatePreview(); updateCounter()"></textarea>
+      <div class="char-counter" id="charCounter">0 / 280</div>
+    </div>
+
+    <div class="mesh-preview" id="meshPreview">
+      <div class="preview-label">⬡ TRANSMISSION PREVIEW</div>
+      <div class="preview-empty">Compose a fragment to preview...</div>
+    </div>
+
+    <button class="fire-btn amber" id="meshFireBtn" onclick="fireMesh()">
+      ⬡ TRANSMIT TO EXTRANET
+    </button>
+    <button class="clear-btn" onclick="clearMesh()">CLEAR</button>
+    <div class="hotkey-row"><span>⌘+ENTER = TRANSMIT</span><span>ESC = CLEAR</span></div>
+  </div>
+
+  <!-- TAB: LOG -->
+  <div class="tab-panel" id="tab-log">
+    <div class="log-tab-header">
+      <div class="log-tab-title">▦ DISPATCH LOG</div>
+      <div class="cycle-field">
+        <span class="cycle-label">⬡ CYCLE</span>
+        <input class="cycle-input" id="cycleInput" type="text" maxlength="20" autocomplete="off">
+      </div>
+    </div>
+    <div class="log-list" id="logList">
+      <div class="log-empty">No transmissions fired this session.</div>
+    </div>
+    <button class="log-clear-btn" onclick="clearLog()">CLEAR LOG</button>
+  </div>
+
+<script>
+  const DAY_AE = "886";
+  let selectedTier = 'TIER 1';
+  let logCount = 0;
+  let activeTab = 'follower';
+  let lastAlertType = null;
+
+  // ── OPERATOR IDENTITY ──
+  function getOperatorCallsign() {
+    return document.getElementById('operatorCallsign').value.trim() || 'UNIDENTIFIED';
+  }
+  function getOperatorSettlement() {
+    return document.getElementById('operatorSettlement').value || '';
+  }
+  function getOperatorTag() {
+    const cs = getOperatorCallsign();
+    const st = getOperatorSettlement();
+    return st ? `${cs} · ${st}` : cs;
+  }
+  function saveOperatorIdentity() {
+    localStorage.setItem('nw_v1_callsign',   document.getElementById('operatorCallsign').value.trim());
+    localStorage.setItem('nw_v1_settlement', document.getElementById('operatorSettlement').value);
+  }
+  function loadOperatorIdentity() {
+    const cs = localStorage.getItem('nw_v1_callsign')   || '';
+    const st = localStorage.getItem('nw_v1_settlement') || '';
+    document.getElementById('operatorCallsign').value   = cs;
+    document.getElementById('operatorSettlement').value = st;
+    updateDockDisplay();
+  }
+  function updateDockDisplay() {
+    const cs = getOperatorCallsign();
+    const st = getOperatorSettlement();
+    const el = document.getElementById('dockIdentityDisplay');
+    if (cs === 'UNIDENTIFIED' && !st) {
+      el.innerHTML = '<span style="color:rgba(0,255,255,0.25)">UNIDENTIFIED</span>';
+    } else {
+      const settlementHtml = st
+        ? `<br><span style="font-size:9px;color:rgba(0,255,255,0.4)">${st}</span>`
+        : '';
+      el.innerHTML = `<span>${cs}</span>${settlementHtml}`;
+    }
+  }
+  // Follower = Amber #FFAA00 · Subscriber = Neon Green #39FF14
+  // Covenant Intel = Red #FF2200 · Operator = Green #00FF00
+  // Chronicle = Cyan #00FFFF · Open Thread = Magenta #FF00FF
+  // Community Record = Amber #FFAA00 · Mesh Fragment = Amber #FFAA00
+  const TYPE_COLORS = {
+    'MESH FRAGMENT':        { hex: '#4488ff', glow: 'rgba(68,136,255,0.4)',    label: '⬡ MESH FRAGMENT',              code: 'mesh' },
+    'CHRONICLE':            { hex: '#ffffff', glow: 'rgba(255,255,255,0.35)',  label: '⬡ CHRONICLE / COMMUNITY RECORD', code: 'community' },
+    'COMMUNITY RECORD':     { hex: '#ffffff', glow: 'rgba(255,255,255,0.35)',  label: '⬡ CHRONICLE / COMMUNITY RECORD', code: 'community' },
+    'COVENANT INTEL':       { hex: '#ff2200', glow: 'rgba(255,34,0,0.4)',      label: '⬡ COVENANT INTEL',             code: 'covenant' },
+    'OPEN THREAD':          { hex: '#39ff14', glow: 'rgba(57,255,20,0.4)',     label: '⬡ OPEN THREAD',                code: 'oasis' },
+    'MINOR ALERT':          { hex: '#ffaa00', glow: 'rgba(255,170,0,0.4)',     label: '⬡ MINOR ALERT',                code: 'critical' },
+    'OPERATOR':             { hex: '#ff00ff', glow: 'rgba(255,0,255,0.4)',     label: '⬡ OPERATOR',                   code: 'operator' },
+    'RESOURCE':             { hex: '#ffff00', glow: 'rgba(255,255,0,0.4)',     label: '⬡ RESOURCE',                   code: 'resource' },
+  };
+
+  // ── APPLY MESH TYPE COLOR ──
+  function applyMeshTypeColor(typeName) {
+    const c = TYPE_COLORS[typeName] || TYPE_COLORS['MESH FRAGMENT'];
+    const panel  = document.getElementById('tab-mesh');
+    const banner = document.getElementById('meshTypeBanner');
+
+    // Field borders
+    ['meshType','meshPriority','meshOrigin','meshBody'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.borderColor = c.hex;
+    });
+    // Dropdown arrow SVG color update
+    const sel = document.getElementById('meshType');
+    if (sel) {
+      const encodedColor = encodeURIComponent(c.hex);
+      sel.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='${encodedColor}' d='M5 6L0 0h10z'/%3E%3C/svg%3E")`;
+      sel.style.color = c.hex;
+    }
+    const selPrio = document.getElementById('meshPriority');
+    if (selPrio) selPrio.style.color = c.hex;
+
+    // Labels
+    panel.querySelectorAll('.field-label.amber').forEach(el => el.style.color = c.hex + 'aa');
+    // Char counter
+    const cc = document.getElementById('charCounter');
+    if (cc && !cc.classList.contains('warn') && !cc.classList.contains('limit')) cc.style.color = c.hex + '66';
+    // Fire button
+    const fb = document.getElementById('meshFireBtn');
+    if (fb) { fb.style.background = c.hex; fb.style.boxShadow = `0 0 20px ${c.glow}`; fb.style.color = '#000'; }
+    // Clear btn
+    const cb = panel.querySelector('.clear-btn');
+    if (cb) { cb.style.borderColor = c.hex + '44'; cb.style.color = c.hex + '88'; }
+    // Preview box
+    const pv = document.getElementById('meshPreview');
+    if (pv) { pv.style.borderColor = c.hex + '44'; pv.style.background = c.hex.replace('#','') === 'ff2200' ? 'rgba(255,34,0,0.04)' : `rgba(0,0,0,0)`; }
+    // Banner
+    banner.textContent = c.label + ' — CHANNEL ACTIVE';
+    banner.style.borderColor  = c.hex;
+    banner.style.color        = c.hex;
+    banner.style.background   = c.hex + '12';
+    banner.classList.add('visible');
+  }
+
+  // ── CLOCK + WINDOW ──
+  function tick() {
+    const n = new Date();
+    const t = [n.getHours(), n.getMinutes(), n.getSeconds()]
+      .map(v => String(v).padStart(2,'0')).join(':');
+    document.getElementById('liveClock').textContent = t;
+    document.getElementById('dayAe').textContent = `DAY ${DAY_AE} AE`;
+    const day = n.getDay(), hour = n.getHours();
+    const dot = document.getElementById('windowDot'), label = document.getElementById('windowLabel');
+    if (day === 2 && hour >= 20 && hour < 22) {
+      dot.className = 'window-dot open'; label.className = 'window-label open'; label.textContent = 'WINDOW OPEN';
+    } else {
+      dot.className = 'window-dot closed'; label.className = 'window-label closed'; label.textContent = 'WINDOW CLOSED';
+    }
+  }
+  tick(); setInterval(tick, 1000);
+
+  // ── NW CYCLE — AUTO-CALCULATED ──
+  // Cycle 001 = Tuesday March 25, 2025 (first broadcast)
+  // Increments every Tuesday automatically — no manual update needed
+  function getCurrentWeekLabel() {
+    const origin = new Date('2025-03-25T00:00:00');
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 2=Tue
+    const daysToLastTuesday = (dayOfWeek >= 2) ? dayOfWeek - 2 : dayOfWeek + 5;
+    const lastTuesday = new Date(now);
+    lastTuesday.setDate(now.getDate() - daysToLastTuesday);
+    lastTuesday.setHours(0,0,0,0);
+    const weeksDelta = Math.round((lastTuesday - origin) / (7 * 24 * 60 * 60 * 1000));
+    const cycle = weeksDelta + 1;
+    return "'" + String(cycle).padStart(3,'0');  // apostrophe prefix forces Google Sheets text format
+  }
+  document.getElementById('cycleInput').value = getCurrentWeekLabel();
+
+  // ── TABS ──
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+    activeTab = tab;
+    if (tab === 'log') { document.getElementById('logBadge').style.display = 'none'; logCount = 0; }
+    if (tab === 'mesh') applyMeshTypeColor(document.getElementById('meshType').value);
+    const focusMap = { follower: 'followerName', subscriber: 'subName', mesh: 'meshBody' };
+    if (focusMap[tab]) setTimeout(() => document.getElementById(focusMap[tab]).focus(), 50);
+  }
+
+  // ── TIER SELECT ──
+  function selectTier(btn) {
+    document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedTier = btn.dataset.tier;
+  }
+
+  // ── STATUS ──
+  function setStatus(msg) { document.getElementById('statusText').textContent = msg; }
+
+  // ── MESH WEBSOCKET — live push to overlay ──
+  const MESH_SERVER = 'ws://localhost:3001';
+  let meshSocket = null;
+  let meshReconnectTimer = null;
+
+  function connectMeshSocket() {
+    try {
+      meshSocket = new WebSocket(MESH_SERVER);
+
+      meshSocket.onopen = () => {
+        if (meshReconnectTimer) { clearTimeout(meshReconnectTimer); meshReconnectTimer = null; }
+        meshSocket.send(JSON.stringify({ type: 'identify', role: 'operator' }));
+        setStatus('⬡ MESH SERVER CONNECTED — ready');
+        console.log('[V1] Connected to MESH server');
+      };
+
+      meshSocket.onclose = () => {
+        meshSocket = null;
+        console.log('[V1] MESH server disconnected — retry in 5s');
+        meshReconnectTimer = setTimeout(connectMeshSocket, 5000);
+      };
+
+      meshSocket.onerror = () => {
+        meshSocket = null;
+        // Silently retry — server may not be running yet
+      };
+    } catch (e) {
+      console.log('[V1] WebSocket unavailable — overlay push disabled');
+    }
+  }
+
+  function pushFragmentToOverlay(frag) {
+    if (!meshSocket || meshSocket.readyState !== 1) return; // not connected — no-op
+    meshSocket.send(JSON.stringify({ type: 'fragment', ...frag }));
+  }
+
+  connectMeshSocket();
+
+  // ── ZAPIER WEBHOOK ──
+  const ZAPIER_URL = 'https://hooks.zapier.com/hooks/catch/21968315/un8wnyx/';
+
+  function sendToZapier(payload) {
+    const now = new Date();
+    payload.timestamp = [
+      now.getFullYear(),
+      String(now.getMonth()+1).padStart(2,'0'),
+      String(now.getDate()).padStart(2,'0')
+    ].join('-') + ' ' + [
+      String(now.getHours()).padStart(2,'0'),
+      String(now.getMinutes()).padStart(2,'0'),
+      String(now.getSeconds()).padStart(2,'0')
+    ].join(':');
+    payload.cycle      = document.getElementById('cycleInput').value.trim() || getCurrentWeekLabel();
+    payload.operator   = getOperatorCallsign();
+    payload.settlement = getOperatorSettlement();
+
+    // Hidden iframe + form POST — bypasses CORS entirely
+    let iframe = document.getElementById('zapier-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'zapier-iframe';
+      iframe.name = 'zapier-iframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = ZAPIER_URL;
+    form.target = 'zapier-iframe';
+    form.style.display = 'none';
+    Object.entries(payload).forEach(([k, v]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = k;
+      input.value = v || '';
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => { form.remove(); }, 2000);
+  }
+
+  // ── LOG ──
+  function addLog(type, name, extra) {
+    const n = new Date();
+    const t = [n.getHours(), n.getMinutes(), n.getSeconds()].map(v => String(v).padStart(2,'0')).join(':');
+    const cycle = document.getElementById('cycleInput').value.trim() || getCurrentWeekLabel();
+    const emptyEl = document.querySelector('.log-empty'); if (emptyEl) emptyEl.remove();
+    const cssType = type === 'follower' ? 'follower' : type === 'subscriber' ? 'subscriber' : 'mesh';
+    const lbl     = type === 'follower' ? 'FOLLOWER'  : type === 'subscriber' ? 'SUB' : 'MESH';
+    const opTag   = getOperatorTag();
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${cssType}-log`;
+    entry.innerHTML = `
+      <span class="log-time">${t}</span>
+      <span class="log-type">${lbl}</span>
+      <span class="log-name">${name}</span>
+      ${extra ? `<span class="log-extra">${extra}</span>` : ''}
+      <span class="log-extra" style="margin-left:auto;color:rgba(0,255,255,0.3)">${cycle}</span>
+      <span class="log-extra" style="color:rgba(0,255,255,0.45);font-size:10px">${opTag}</span>`;
+    const list = document.getElementById('logList');
+    list.insertBefore(entry, list.firstChild);
+    while (list.children.length > 40) list.removeChild(list.lastChild);
+    if (activeTab !== 'log') {
+      logCount++;
+      const badge = document.getElementById('logBadge');
+      badge.style.display = 'inline-block'; badge.textContent = logCount;
+    }
+  }
+
+  function clearLog() {
+    document.getElementById('logList').innerHTML = '<div class="log-empty">Log cleared.</div>';
+    document.getElementById('logBadge').style.display = 'none'; logCount = 0;
+  }
+
+  // ── FLASH BUTTON ──
+  function flashBtn(id) {
+    const btn = document.getElementById(id);
+    btn.classList.remove('fired'); void btn.offsetWidth; btn.classList.add('fired');
+  }
+
+  // ── FIRE FOLLOWER ──
+  function fireFollower() {
+    const input = document.getElementById('followerName'), name = input.value.trim();
+    if (!name) { input.style.borderColor='#ff2200'; setTimeout(()=>input.style.borderColor='#00ff00',800); input.focus(); return; }
+    localStorage.setItem('nw_alert_follower', JSON.stringify({ type:'follower', name, operator: getOperatorCallsign(), settlement: getOperatorSettlement(), ts: Date.now() }));
+    flashBtn('followerFireBtn');
+    addLog('follower', name.toUpperCase(), null);
+    setStatus(`▶ FOLLOWER — ${name.toUpperCase()} — ${new Date().toLocaleTimeString()}`);
+    sendToZapier({ type: 'FOLLOWER', username: name.toUpperCase(), transmission: '', tier: '', code: 'follower', priority: '', status: 'Live' });
+    input.value = ''; input.focus();
+  }
+
+  // ── FIRE SUBSCRIBER ──
+  function fireSubscriber() {
+    const input = document.getElementById('subName'), name = input.value.trim();
+    if (!name) { input.style.borderColor='#ff2200'; setTimeout(()=>input.style.borderColor='#ff00ff',800); input.focus(); return; }
+    localStorage.setItem('nw_alert_subscriber', JSON.stringify({ type:'subscriber', name, tier: selectedTier, operator: getOperatorCallsign(), settlement: getOperatorSettlement(), ts: Date.now() }));
+    flashBtn('subFireBtn');
+    addLog('subscriber', name.toUpperCase(), selectedTier);
+    setStatus(`▶ SUBSCRIBER — ${name.toUpperCase()} — ${selectedTier} — ${new Date().toLocaleTimeString()}`);
+    sendToZapier({ type: 'SUBSCRIBER', username: name.toUpperCase(), transmission: selectedTier, tier: selectedTier, code: 'subscriber', priority: '', status: 'Live' });
+    input.value = ''; input.focus();
+  }
+
+  // ── MESH PREVIEW ──
+  function updatePreview() {
+    const type=document.getElementById('meshType').value, origin=document.getElementById('meshOrigin').value.trim();
+    const body=document.getElementById('meshBody').value.trim(), prio=document.getElementById('meshPriority').value;
+    const box=document.getElementById('meshPreview');
+    // Update colors whenever type changes
+    applyMeshTypeColor(type);
+    if (!body) { box.innerHTML=`<div class="preview-label">⬡ TRANSMISSION PREVIEW</div><div class="preview-empty">Compose a fragment to preview...</div>`; return; }
+    const prioColor = prio==='CRITICAL'?'#ff2200':'#ffaa00';
+    const prioTag   = prio!=='STANDARD'?`<span style="color:${prioColor};font-size:10px;margin-left:8px">⚠ ${prio}</span>`:'';
+    const c = TYPE_COLORS[type] || TYPE_COLORS['MESH FRAGMENT'];
+    const cs = getOperatorCallsign(), st = getOperatorSettlement();
+    const opLine = (cs !== 'UNIDENTIFIED' || st)
+      ? `<div style="font-size:10px;color:rgba(0,255,255,0.4);margin-top:4px">— ${getOperatorTag()}</div>`
+      : '';
+    box.innerHTML=`<div class="preview-label" style="color:${c.hex}88">⬡ TRANSMISSION PREVIEW</div><div style="margin-top:4px"><span class="preview-type" style="color:${c.hex}">[${type}]</span>${origin?`<span style="color:${c.hex}88;font-size:10px;margin-left:8px">${origin}</span>`:''}${prioTag}</div><div class="preview-body">${body}</div>${opLine}`;
+  }
+
+  // ── CHAR COUNTER ──
+  function updateCounter() {
+    const len=document.getElementById('meshBody').value.length, el=document.getElementById('charCounter');
+    el.textContent=`${len} / 280`; el.className=len>250?'char-counter limit':len>200?'char-counter warn':'char-counter';
+  }
+
+  // ── FIRE MESH ──
+  function fireMesh() {
+    const body=document.getElementById('meshBody').value.trim(), type=document.getElementById('meshType').value;
+    const origin=document.getElementById('meshOrigin').value.trim(), prio=document.getElementById('meshPriority').value;
+    if (!body) {
+      const c = TYPE_COLORS[type] || TYPE_COLORS['MESH FRAGMENT'];
+      const ta=document.getElementById('meshBody'); ta.style.borderColor='#ff2200';
+      setTimeout(()=>ta.style.borderColor=c.hex,800); ta.focus(); return;
+    }
+    localStorage.setItem('nw_mesh_fragment', JSON.stringify({ type:'mesh', msgType:type, body, origin, priority:prio, operator: getOperatorCallsign(), settlement: getOperatorSettlement(), ts:Date.now() }));
+    flashBtn('meshFireBtn');
+    const typeCode = (TYPE_COLORS[type] || {}).code || 'mesh';
+    addLog('mesh', body.length>45?body.substring(0,45)+'...':body, type + ' · ' + typeCode);
+    setStatus(`⬡ MESH TRANSMITTED — [${type}] — ${new Date().toLocaleTimeString()}`);
+    sendToZapier({ type: 'MESH', username: '', transmission: type, tier: '', code: typeCode, priority: prio, body: body, origin: origin, status: 'Live' });
+    pushFragmentToOverlay({
+      msgType: type,
+      cat:     typeCode,
+      label:   (TYPE_COLORS[type] || {}).label || type,
+      header:  origin || null,
+      body:    body,
+      priority: prio.toLowerCase(),
+      operator:   getOperatorCallsign(),
+      settlement: getOperatorSettlement(),
+      duration: 15000
+    });
+  }
+
+  // ── CLEAR MESH ──
+  function clearMesh() {
+    document.getElementById('meshBody').value=''; document.getElementById('meshOrigin').value='';
+    document.getElementById('meshType').value='MESH FRAGMENT'; document.getElementById('meshPriority').value='STANDARD';
+    updatePreview(); updateCounter(); document.getElementById('meshBody').focus();
+  }
+
+  // ── KEYBOARD ──
+  document.getElementById('followerName').addEventListener('keydown', e => { if(e.key==='Enter') fireFollower(); if(e.key==='Escape') document.getElementById('followerName').value=''; });
+  document.getElementById('subName').addEventListener('keydown', e => { if(e.key==='Enter') fireSubscriber(); if(e.key==='Escape') document.getElementById('subName').value=''; });
+  document.getElementById('meshBody').addEventListener('keydown', e => { if((e.metaKey||e.ctrlKey)&&e.key==='Enter') fireMesh(); if(e.key==='Escape') clearMesh(); });
+  document.getElementById('meshOrigin').addEventListener('keydown', e => { if(e.key==='Escape') clearMesh(); });
+
+  // ── INIT ──
+  loadOperatorIdentity();
+  applyMeshTypeColor(document.getElementById('meshType').value);
+  document.getElementById('meshType').addEventListener('change', () => applyMeshTypeColor(document.getElementById('meshType').value));
+</script>
+</body>
+</html>
