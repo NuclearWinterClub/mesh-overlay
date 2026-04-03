@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OASIS BBS - Nuclear Winter</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #000;
+      font-family: 'VT323', monospace;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    .container {
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+      color: #00ff00;
+    }
+    
+    /* Terminal effect */
+    .terminal {
+      width: 100%;
+      height: 100%;
+      padding: 25px 40px;
+      font-size: 22px;
+      line-height: 1.25;
+      letter-spacing: 1px;
+      position: relative;
+      background: #000;
+    }
+    
+    /* Blinking cursor */
+    .cursor {
+      display: inline-block;
+      width: 15px;
+      height: 32px;
+      background: #00ff00;
+      margin-left: 8px;
+      animation: blink-cursor 1s step-end infinite;
+    }
+    
+    @keyframes blink-cursor {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    
+    /* Text animations */
+    .line {
+      opacity: 0;
+      animation: type-in 0.1s forwards;
+      white-space: pre;
+    }
+    
+    @keyframes type-in {
+      to { opacity: 1; }
+    }
+    
+    /* ANSI color classes */
+    .cyan { color: #00ffff; }
+    .yellow { color: #ffff00; }
+    .red { color: #ff0000; }
+    .magenta { color: #ff00ff; }
+    .blue { color: #5555ff; }
+    .green { color: #00ff00; }
+    .white { color: #ffffff; }
+    .gray { color: #808080; }
+    .bright-cyan { color: #00ffff; font-weight: bold; }
+    .bright-yellow { color: #ffff00; font-weight: bold; }
+    
+    /* Text glow — large/soft for big title background element */
+    .glow {
+      text-shadow: 
+        0 0 8px currentColor,
+        0 0 20px currentColor,
+        0 0 40px currentColor;
+    }
+
+    /* Sharp glow — for readable subtitle text */
+    .glow-sharp {
+      text-shadow:
+        0 0 2px currentColor,
+        0 0 6px currentColor;
+    }
+    
+    /* Big title — dim so it reads as background behind yellow subtitle */
+    .big-title {
+      font-size: 56px;
+      letter-spacing: 16px;
+      text-align: center;
+      opacity: 0.45;
+    }
+    
+    /* Scanlines */
+    .scanlines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    /* CRT glow */
+    .crt-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center,
+        rgba(0, 255, 0, 0.1) 0%,
+        transparent 70%);
+      pointer-events: none;
+      z-index: 999;
+    }
+    
+    /* Screen flicker */
+    @keyframes flicker {
+      0% { opacity: 1; }
+      2% { opacity: 0.95; }
+      4% { opacity: 1; }
+      6% { opacity: 0.98; }
+      8% { opacity: 1; }
+      98% { opacity: 1; }
+      100% { opacity: 0.97; }
+    }
+    
+    .terminal {
+      animation: flicker 0.15s infinite;
+    }
+    
+    /* Center content */
+    .content {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* Border lines */
+    .border-line {
+      color: #00ffff;
+    }
+    
+    /* Controls */
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+    }
+    
+    .replay-btn {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00ff00;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    
+    .replay-btn:hover {
+      background: #00ffff;
+      box-shadow: 0 0 20px #00ffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <button class="replay-btn" onclick="replay()">↻ REPLAY</button>
+    </div>
+    
+    <div class="terminal">
+      <div class="content" id="content">
+        <!-- Content will be typed in by JavaScript -->
+      </div>
+    </div>
+    
+    <div class="crt-glow"></div>
+    <div class="scanlines"></div>
+  </div>
+  
+  <script>
+    // ========================================
+    // CONFIGURATION
+    // ========================================
+    const STREAM_TIME = "8:00 PM - 10:00 PM PDT";
+
+    // ── SETTLEMENT — read from localStorage at load time (set by V1 Operator Panel) ──
+    // Falls back to OASIS if nothing is stored yet
+    const SHELTER_NUMBER = localStorage.getItem('nw_v1_settlement') || 'OASIS';
+
+    // ── BIG TITLE — spaced letters from settlement name ──
+    // Words are dot-separated internally, triple-spaced between words
+    // e.g. "GRID 9-FOXTROT" → "G·R·I·D   9·F·O·X·T·R·O·T"
+    function makeSpacedTitle(name) {
+      return name.toUpperCase()
+        .split(' ')
+        .map(word => word.split('').join('·'))
+        .join('   ');
+    }
+
+    // ── BIG TITLE FONT SIZE — scales down for longer names ──
+    function titleFontSize(title) {
+      const len = title.length;
+      if (len <= 7)  return '72px';
+      if (len <= 11) return '60px';
+      if (len <= 15) return '48px';
+      if (len <= 19) return '38px';
+      return '30px';
+    }
+
+    const BIG_TITLE      = makeSpacedTitle(SHELTER_NUMBER);
+    const BIG_TITLE_SIZE = titleFontSize(BIG_TITLE);
+
+    // ── AUTO-CALCULATING DAY COUNTER ──
+    // The Event Date: October 24, 2023
+    // The day Thorne's Covenant launched the strikes.
+    const EVENT_DATE = new Date('2023-10-24T00:00:00');
+    const daysSince = Math.floor((new Date() - EVENT_DATE) / (1000 * 60 * 60 * 24));
+    const DAYS_AFTER_EVENT = daysSince.toLocaleString('en-US');
+    // ========================================
+    // END CONFIGURATION
+    // ========================================
+    
+    const lines = [
+      { text: '<span class="border-line">════════════════════════════════════════════════════════════════════════════</span>', delay: 0 },
+      { text: '', delay: 30 },
+      { text: '                           <span class="bright-cyan glow big-title" style="font-size:' + BIG_TITLE_SIZE + '">' + BIG_TITLE + '</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '                   <span class="bright-yellow glow-sharp">SHELTER ' + SHELTER_NUMBER + ' BULLETIN BOARD SYSTEM</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '<span class="border-line">════════════════════════════════════════════════════════════════════════════</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '  <span class="white">System Date:</span>  <span class="green">Day ' + DAYS_AFTER_EVENT + ' AE (After Event)</span>', delay: 100 },
+      { text: '  <span class="white">Local Time:</span>   <span class="green" id="time">00:00:00 PST</span>', delay: 100 },
+      { text: '  <span class="white">Node:</span>         <span class="cyan">SHELTER-' + SHELTER_NUMBER + '-MAIN</span>', delay: 100 },
+      { text: '  <span class="white">Sysop:</span>        <span class="yellow" id="sysop-name">V1 OPERATOR</span>', delay: 100 },
+      { text: '  <span class="white">Settlement:</span>   <span class="cyan" id="sysop-settlement">' + SHELTER_NUMBER + '</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '<span class="border-line">────────────────────────────────────────────────────────────────────────────</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '  <span class="red glow">⚠ ALERT:</span>', delay: 100 },
+      { text: '  <span class="yellow">Presidential Broadcast Detected - Verify All Information</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '  <span class="green">✓ STATUS:</span> <span class="white">Shelter Systems Operational</span>', delay: 100 },
+      { text: '  <span class="green">✓ STATUS:</span> <span class="white">Radiation Levels: 3.2 R/hr (Safe)</span>', delay: 100 },
+      { text: '  <span class="green">✓ STATUS:</span> <span class="white">Communications Array: Online</span>', delay: 100 },
+      { text: '  <span class="green">✓ STATUS:</span> <span class="white">Survivors Connected: <span class="cyan" id="survivors">--</span></span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '<span class="border-line">────────────────────────────────────────────────────────────────────────────</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '  <span class="cyan glow">TONIGHT\'S BROADCAST:</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '    <span class="yellow">♫</span>  <span class="white">Nuclear Winter Club - Live Transmission</span>', delay: 100 },
+      { text: '    <span class="yellow">♫</span>  <span class="white">' + STREAM_TIME + '</span>', delay: 100 },
+      { text: '    <span class="yellow">♫</span>  <span class="white">Dancing on the Edge of Extinction</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '<span class="border-line">════════════════════════════════════════════════════════════════════════════</span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '  <span class="magenta glow">[PRESS ANY KEY TO CONTINUE]</span><span class="cursor"></span>', delay: 100 },
+      { text: '', delay: 30 },
+      { text: '', delay: 30 },
+      { text: '<span class="gray">Connection maintained. Signal strength: Strong. We remain.</span>', delay: 100 }
+    ];
+    
+    let currentLine = 0;
+    const contentDiv = document.getElementById('content');
+    
+    function typeNextLine() {
+      if (currentLine < lines.length) {
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'line';
+        lineDiv.innerHTML = lines[currentLine].text;
+        lineDiv.style.animationDelay = '0s';
+        contentDiv.appendChild(lineDiv);
+        
+        currentLine++;
+        setTimeout(typeNextLine, lines[currentLine - 1].delay);
+      }
+    }
+    
+    // Start typing immediately
+    typeNextLine();
+    
+    // Update time
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const timeEl = document.getElementById('time');
+      if (timeEl) {
+        timeEl.textContent = `${hours}:${minutes}:${seconds} PST`;
+      }
+    }
+    
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    // ── TWITCH LIVE VIEWER COUNT ──
+    const TWITCH_CLIENT_ID = 'czg89ot2fntobq8fnpgcdngjnx2vmg';
+    const TWITCH_CHANNEL   = 'nuclear_winter_club';
+
+    async function fetchTwitchViewers() {
+      try {
+        // Step 1: Get app access token
+        const tokenRes = await fetch(
+          `https://id.twitch.tv/oauth2/token?client_id=${TWITCH_CLIENT_ID}&grant_type=client_credentials`,
+          { method: 'POST' }
+        );
+        const tokenData = await tokenRes.json();
+        const token = tokenData.access_token;
+        if (!token) throw new Error('No token');
+
+        // Step 2: Get stream data
+        const streamRes = await fetch(
+          `https://api.twitch.tv/helix/streams?user_login=${TWITCH_CHANNEL}`,
+          { headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Authorization': `Bearer ${token}` } }
+        );
+        const streamData = await streamRes.json();
+        const stream = streamData.data && streamData.data[0];
+
+        const survivorsEl = document.getElementById('survivors');
+        if (survivorsEl) {
+          if (stream && stream.viewer_count !== undefined) {
+            survivorsEl.textContent = stream.viewer_count.toLocaleString();
+            console.log('[TWITCH] Live viewers: ' + stream.viewer_count);
+          } else {
+            survivorsEl.textContent = 'OFFLINE';
+            console.log('[TWITCH] Stream offline');
+          }
+        }
+      } catch(err) {
+        console.warn('[TWITCH] Fetch failed:', err.message);
+        // Fall back to a holding value
+        const survivorsEl = document.getElementById('survivors');
+        if (survivorsEl && survivorsEl.textContent === '--') {
+          survivorsEl.textContent = '---';
+        }
+      }
+    }
+
+    // ── V1 OPERATOR IDENTITY ──
+    // Reads from localStorage — written by the V1 Operator Panel
+    let _lastSettlement = SHELTER_NUMBER;
+
+    function updateOperatorIdentity() {
+      const callsign   = localStorage.getItem('nw_v1_callsign')   || '';
+      const settlement = localStorage.getItem('nw_v1_settlement') || 'OASIS';
+      const sysopEl      = document.getElementById('sysop-name');
+      const settlementEl = document.getElementById('sysop-settlement');
+      if (sysopEl)      sysopEl.textContent      = callsign   ? callsign.toUpperCase()   : 'V1 OPERATOR';
+      if (settlementEl) settlementEl.textContent = settlement ? settlement.toUpperCase() : SHELTER_NUMBER;
+      // If settlement changed, reload so the big title re-renders with the new name
+      if (settlement !== _lastSettlement) {
+        _lastSettlement = settlement;
+        location.reload();
+      }
+    }
+
+    // ── WEBSOCKET — live identity push from V1 panel ──
+    const BBS_MESH_SERVER = 'ws://localhost:3001';
+    let bbsSocket = null;
+    let bbsReconnectTimer = null;
+
+    function connectBbsSocket() {
+      try {
+        bbsSocket = new WebSocket(BBS_MESH_SERVER);
+        bbsSocket.onopen = () => {
+          if (bbsReconnectTimer) { clearTimeout(bbsReconnectTimer); bbsReconnectTimer = null; }
+          bbsSocket.send(JSON.stringify({ type: 'identify', role: 'overlay' }));
+          console.log('[BBS] Connected to MESH server');
+        };
+        bbsSocket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'fragment') updateOperatorIdentity();
+          } catch (e) {}
+        };
+        bbsSocket.onclose = () => {
+          bbsSocket = null;
+          bbsReconnectTimer = setTimeout(connectBbsSocket, 5000);
+        };
+        bbsSocket.onerror = () => { bbsSocket = null; };
+      } catch (e) {
+        console.log('[BBS] Running without MESH server connection');
+      }
+    }
+
+    // Fetch Twitch data on load and every 60 seconds
+    fetchTwitchViewers();
+    setInterval(fetchTwitchViewers, 60000);
+
+    // Identity: update on load, poll every 3 seconds, and via WebSocket
+    updateOperatorIdentity();
+    setInterval(updateOperatorIdentity, 3000);
+    connectBbsSocket();
+
+    function replay() {
+      location.reload();
+    }
+  </script>
+</body>
+</html>
