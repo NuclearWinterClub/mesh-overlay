@@ -841,7 +841,7 @@
     const origin = new Date('2025-03-25T00:00:00');
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0=Sun, 2=Tue
-    const daysToLastTuesday = (dayOfWeek >= 2) ? dayOfWeek - 2 : dayOfWeek + 5;
+    const daysToLastTuesday = (dayOfWeek === 2) ? 0 : (dayOfWeek > 2) ? dayOfWeek - 2 : dayOfWeek + 5;
     const lastTuesday = new Date(now);
     lastTuesday.setDate(now.getDate() - daysToLastTuesday);
     lastTuesday.setHours(0,0,0,0);
