@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -108,6 +109,41 @@
       flex-shrink: 0;
       font-size: 11px;
       letter-spacing: 2px;
+    }
+
+    /* ── ENV TOGGLE ── */
+    .env-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-shrink: 0;
+      border: 1px solid rgba(0,255,0,0.3);
+    }
+
+    .env-btn {
+      background: transparent;
+      border: none;
+      padding: 3px 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      color: rgba(0,255,0,0.3);
+      transition: all 0.15s;
+    }
+
+    .env-btn.active-prod {
+      background: var(--green);
+      color: #000;
+    }
+
+    .env-btn.active-dev {
+      background: var(--amber);
+      color: #000;
+    }
+
+    .env-btn:not(.active-prod):not(.active-dev):hover {
+      color: rgba(0,255,0,0.6);
     }
 
     .window-dot { width: 7px; height: 7px; border-radius: 50%; }
@@ -562,6 +598,10 @@
   <div class="status-ticker">
     <div class="ticker-dot"></div>
     <div id="statusText">V1 PANEL ONLINE — AWAITING INPUT</div>
+    <div class="env-toggle">
+      <button class="env-btn active-prod" id="envProd" onclick="setEnv('prod')">PROD</button>
+      <button class="env-btn" id="envDev" onclick="setEnv('dev')">DEV</button>
+    </div>
     <div class="window-status">
       <div class="window-dot" id="windowDot"></div>
       <div class="window-label" id="windowLabel">CHECKING...</div>
@@ -588,10 +628,10 @@
         <option value="OASIS">OASIS · San Francisco, CA</option>
         <option value="AMBER POST">AMBER POST · Santa Clara, CA</option>
         <option value="SALTLINE">SALTLINE · Santa Cruz, CA</option>
-        <option value="GRID 9F">GRID 9F</option>
+        <option value="GRID 9-FOXTROT">GRID 9-FOXTROT</option>
         <option value="FORGE">FORGE</option>
-        <option value="RAVEN">RAVEN</option>
-        <option value="CROSSING">CROSSING</option>
+        <option value="HAVEN">HAVEN</option>
+        <option value="THE CROSSING">THE CROSSING</option>
       </select>
     </div>
     <div class="dock-sep"></div>
@@ -717,7 +757,7 @@
   </div>
 
 <script>
-  const DAY_AE = "896";
+  const DAY_AE = "886";
   let selectedTier = 'TIER 1';
   let logCount = 0;
   let activeTab = 'follower';
@@ -841,7 +881,7 @@
     const origin = new Date('2025-03-25T00:00:00');
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0=Sun, 2=Tue
-    const daysToLastTuesday = (dayOfWeek === 2) ? 0 : (dayOfWeek > 2) ? dayOfWeek - 2 : dayOfWeek + 5;
+    const daysToLastTuesday = (dayOfWeek >= 2) ? dayOfWeek - 2 : dayOfWeek + 5;
     const lastTuesday = new Date(now);
     lastTuesday.setDate(now.getDate() - daysToLastTuesday);
     lastTuesday.setHours(0,0,0,0);
@@ -874,13 +914,25 @@
   function setStatus(msg) { document.getElementById('statusText').textContent = msg; }
 
   // ── MESH WEBSOCKET — live push to overlay ──
-  const MESH_SERVER = 'ws://localhost:3001';
+  const MESH_SERVERS = { prod: 'ws://localhost:3001', dev: 'ws://localhost:3003' };
+  let currentEnv = 'prod';
   let meshSocket = null;
   let meshReconnectTimer = null;
 
+  function setEnv(env) {
+    if (env === currentEnv) return;
+    currentEnv = env;
+    document.getElementById('envProd').className = 'env-btn' + (env === 'prod' ? ' active-prod' : '');
+    document.getElementById('envDev').className  = 'env-btn' + (env === 'dev'  ? ' active-dev'  : '');
+    setStatus(`⬡ SWITCHING TO ${env.toUpperCase()} — reconnecting...`);
+    if (meshSocket) { meshSocket.onclose = null; meshSocket.close(); meshSocket = null; }
+    if (meshReconnectTimer) { clearTimeout(meshReconnectTimer); meshReconnectTimer = null; }
+    connectMeshSocket();
+  }
+
   function connectMeshSocket() {
     try {
-      meshSocket = new WebSocket(MESH_SERVER);
+      meshSocket = new WebSocket(MESH_SERVERS[currentEnv]);
 
       meshSocket.onopen = () => {
         if (meshReconnectTimer) { clearTimeout(meshReconnectTimer); meshReconnectTimer = null; }
